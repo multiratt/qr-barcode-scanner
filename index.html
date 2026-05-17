@@ -361,14 +361,19 @@
 
                 const config = getScanConfig();
 
-                let constraints;
+                // Build cameraIdOrConfig: string deviceId if valid, otherwise constraints object
+                let cameraId;
                 if (cam.deviceId && cam.deviceId.trim() !== '') {
-                    constraints = { deviceId: { exact: cam.deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } };
+                    cameraId = cam.deviceId.trim();
                 } else {
-                    constraints = { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } };
+                    cameraId = { facingMode: "environment" };
                 }
 
-                const stream = await navigator.mediaDevices.getUserMedia({ video: constraints });
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: typeof cameraId === 'string'
+                        ? { deviceId: { exact: cameraId } }
+                        : { facingMode: "environment" }
+                });
                 currentStream = stream;
 
                 // Apply torch if enabled
@@ -379,7 +384,7 @@
                     }
                 }
 
-                await html5QrCode.start(stream, config, onScanSuccess, onScanFailure);
+                await html5QrCode.start(cameraId, config, onScanSuccess, onScanFailure);
 
                 setTimeout(() => {
                     toggleBW(bwEnabled);
