@@ -8,7 +8,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <script src="https://unpkg.com/tesseract.js@5.0.4/dist/tesseract.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'JetBrains Mono', monospace; background: #fff; color: #111; min-height: 100vh; padding: 20px; }
@@ -18,13 +17,18 @@
         .version-badge { font-size: 10px; background: #f0f0f0; padding: 3px 8px; border-radius: 3px; color: #666; margin-left: 8px; }
         .btn { background: #fff; border: 1px solid #111; padding: 7px 14px; font-family: inherit; font-size: 12px; cursor: pointer; }
         .btn:hover { background: #f0f0f0; }
+        .btn.active { background: #111; color: #fff; }
         .controls { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; padding: 12px; border: 1px solid #111; }
         .control-row { display: flex; align-items: center; gap: 12px; }
-        .control-row label { font-size: 12px; min-width: 80px; }
+        .control-row label { font-size: 12px; min-width: 70px; }
         .shape-btns { display: flex; gap: 0; }
-        .shape-btn { padding: 6px 12px; border: 1px solid #111; font-family: inherit; font-size: 11px; cursor: pointer; background: #fff; }
+        .shape-btn { padding: 6px 14px; border: 1px solid #111; font-family: inherit; font-size: 11px; cursor: pointer; background: #fff; }
         .shape-btn.active { background: #111; color: #fff; }
         .shape-btn:not(.active):hover { background: #f0f0f0; }
+        .flash-btn { padding: 6px 12px; border: 1px solid #111; font-family: inherit; font-size: 11px; cursor: pointer; background: #fff; display: flex; align-items: center; gap: 4px; }
+        .flash-btn.on { background: #ff0; color: #111; border-color: #cc0; }
+        .flash-btn:hover { background: #f0f0f0; }
+        .flash-btn.on:hover { background: #dd0; }
         .bw-toggle { display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; }
         .bw-toggle input { cursor: pointer; }
         .tabs { display: flex; gap: 0; margin-bottom: 16px; }
@@ -80,7 +84,6 @@
         .empty-state { padding: 28px; text-align: center; color: #aaa; font-size: 12px; }
         .hidden { display: none; }
 
-        /* OCR suggestions */
         .ocr-suggestions { margin-top: 8px; }
         .ocr-suggestions p { font-size: 11px; color: #555; margin-bottom: 6px; }
         .ocr-candidates { display: flex; flex-direction: column; gap: 4px; }
@@ -103,7 +106,7 @@
         <header>
             <div style="display:flex;align-items:center">
                 <h1>Barcode Scanner</h1>
-                <span class="version-badge" id="versionBadge">v1.8.0</span>
+                <span class="version-badge" id="versionBadge">v1.9.0</span>
             </div>
             <button class="btn" id="exportBtn">Export TXT</button>
         </header>
@@ -114,9 +117,11 @@
                 <div class="shape-btns">
                     <button class="shape-btn active" data-shape="square" onclick="setShape('square')">■ Square</button>
                     <button class="shape-btn" data-shape="tall" onclick="setShape('tall')">▬ Tall</button>
-                    <button class="shape-btn" data-shape="wide" onclick="setShape('wide')">▬▬ Wide</button>
-                    <button class="shape-btn" data-shape="barcode" onclick="setShape('barcode')">═ Barcode</button>
                 </div>
+            </div>
+            <div class="control-row">
+                <label>Flash</label>
+                <button class="flash-btn" id="flashBtn" onclick="toggleFlash()">🔦 Flash</button>
             </div>
             <div class="control-row">
                 <label>B&amp;W Mode</label>
@@ -156,15 +161,16 @@
 
         <div class="footer">
             <div class="changelog-toggle" onclick="document.getElementById('changelog').classList.toggle('visible')">
-                ▼ <span id="changelogLabel">Changelog v1.8.0</span>
+                ▼ <span id="changelogLabel">Changelog v1.9.0</span>
             </div>
             <div class="changelog" id="changelog">
-                <div class="changelog-item"><strong>v1.8.0</strong> — OCR fallback: when no barcode found but text detected, show candidates to pick. Camera restart fix on shape change.</div>
-                <div class="changelog-item"><strong>v1.7.0</strong> — Camera: back camera as default. Fixed Html5QrcodeSupportedFormats (not ScannerFormat).</div>
+                <div class="changelog-item"><strong>v1.9.0</strong> — Shape reduced to Square + Tall. Flash toggle button. Camera refreshes on shape change / page reload.</div>
+                <div class="changelog-item"><strong>v1.8.0</strong> — OCR fallback when no barcode found. Camera restart fix on shape change.</div>
+                <div class="changelog-item"><strong>v1.7.0</strong> — Camera: back camera as default. Fixed Html5QrcodeSupportedFormats.</div>
                 <div class="changelog-item"><strong>v1.6.0</strong> — Upload: fixed "undefined" error by handling Event objects in catch.</div>
                 <div class="changelog-item"><strong>v1.5.0</strong> — Camera: fixed 'Requested device not found' fallback. Upload: fixed scanFile() 3-arg signature.</div>
-                <div class="changelog-item"><strong>v1.4.0</strong> — B&amp;W mode (grayscale + high contrast); 5s dedup; version &amp; changelog footer.</div>
-                <div class="changelog-item"><strong>v1.3.0</strong> — Shape selector (Square/Tall/Wide/Barcode) + manual focus slider.</div>
+                <div class="changelog-item"><strong>v1.4.0</strong> — B&amp;W mode; 5s dedup; version &amp; changelog footer.</div>
+                <div class="changelog-item"><strong>v1.3.0</strong> — Shape selector + manual focus slider.</div>
                 <div class="changelog-item"><strong>v1.2.0</strong> — Camera/upload tabs, history with export/clear, cooldown 3s dedup.</div>
                 <div class="changelog-item"><strong>v1.1.0</strong> — Multi-format support (Code128, EAN, UPC, ITF, QR).</div>
                 <div class="changelog-item"><strong>v1.0.0</strong> — Initial release.</div>
@@ -173,7 +179,7 @@
     </div>
 
     <script>
-        const VERSION = '1.8.0';
+        const VERSION = '1.9.0';
         const STORAGE_KEY = 'barcode_history';
         const SCAN_COOLDOWN_MS = 5000;
         let html5QrCode;
@@ -182,13 +188,12 @@
         let lastScannedTime = 0;
         let currentShape = 'square';
         let bwEnabled = true;
-        let restarting = false;
+        let flashEnabled = false;
+        let currentStream = null;
 
         const SHAPES = {
             square:  { width: 220, height: 220, aspectRatio: 1.0 },
-            tall:    { width: 180, height: 280, aspectRatio: 0.65 },
-            wide:    { width: 320, height: 180, aspectRatio: 1.8 },
-            barcode: { width: 360, height: 80,  aspectRatio: 4.5 }
+            tall:    { width: 180, height: 280, aspectRatio: 0.65 }
         };
 
         // Tab switching
@@ -200,7 +205,7 @@
                 const target = tab.dataset.tab;
                 if (target === 'camera') {
                     document.querySelector('.camera-section').classList.add('active');
-                    startCamera();
+                    refreshCamera();
                 } else {
                     document.querySelector('.upload-section').classList.add('active');
                     stopCamera();
@@ -214,12 +219,21 @@
             document.querySelectorAll('.shape-btn').forEach(b => {
                 b.classList.toggle('active', b.dataset.shape === shape);
             });
-            // Always restart camera when shape changes — clear old scanner first
-            if (cameraActive) {
-                stopCamera();
-                document.getElementById('reader').innerHTML = '';
+            refreshCamera();
+        }
+
+        function toggleFlash() {
+            flashEnabled = !flashEnabled;
+            const btn = document.getElementById('flashBtn');
+            btn.classList.toggle('on', flashEnabled);
+            btn.textContent = flashEnabled ? '🔦 ON' : '🔦 Flash';
+
+            if (currentStream && html5QrCode) {
+                const track = currentStream.getVideoTracks()[0];
+                if (track && 'applyConstraints' in track) {
+                    track.applyConstraints({ advanced: [{ torch: flashEnabled }] }).catch(() => {});
+                }
             }
-            startCamera();
         }
 
         function toggleBW(enabled) {
@@ -269,15 +283,32 @@
             };
         }
 
+        async function refreshCamera() {
+            await stopCamera();
+            document.getElementById('reader').innerHTML = '';
+            document.getElementById('cameraResult').classList.add('hidden');
+            await new Promise(r => setTimeout(r, 500));
+            await startCamera();
+        }
+
+        async function stopCamera() {
+            if (html5QrCode) {
+                try {
+                    await html5QrCode.stop();
+                } catch(e) {}
+            }
+            html5QrCode = null;
+            cameraActive = false;
+            currentStream = null;
+        }
+
         async function startCamera() {
-            if (restarting) return;
             setStatus('Requesting camera...');
 
             let cameras = [];
             try {
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 cameras = devices.filter(d => d.kind === 'videoinput');
-                setStatus('Detecting cameras (' + cameras.length + ' found)...');
             } catch(e) {
                 setStatus('Cannot enumerate devices: ' + normalizeError(e), 'error');
                 return;
@@ -289,11 +320,9 @@
             }
 
             try {
-                // Clear previous scanner
                 document.getElementById('reader').innerHTML = '';
                 html5QrCode = new Html5Qrcode("reader");
 
-                // Pick back/environment camera
                 const backPatterns = ['back', 'rear', 'environment'];
                 let cam = cameras[0];
                 for (const c of cameras) {
@@ -328,20 +357,29 @@
                     addToHistory(decodedText, fmtName);
                 };
 
-                const onScanFailure = (errorMessage, errorResult) => {
-                    // Silently ignore — camera is scanning
-                };
+                const onScanFailure = (errorMessage, errorResult) => {};
 
                 const config = getScanConfig();
 
                 let constraints;
                 if (cam.deviceId && cam.deviceId.trim() !== '') {
-                    constraints = { deviceId: { exact: cam.deviceId } };
+                    constraints = { deviceId: { exact: cam.deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } };
                 } else {
-                    constraints = { facingMode: "environment" };
+                    constraints = { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } };
                 }
 
-                await html5QrCode.start(constraints, config, onScanSuccess, onScanFailure);
+                const stream = await navigator.mediaDevices.getUserMedia({ video: constraints });
+                currentStream = stream;
+
+                // Apply torch if enabled
+                if (flashEnabled) {
+                    const track = stream.getVideoTracks()[0];
+                    if (track && 'applyConstraints' in track) {
+                        try { await track.applyConstraints({ advanced: [{ torch: true }] }); } catch(e) {}
+                    }
+                }
+
+                await html5QrCode.start(stream, config, onScanSuccess, onScanFailure);
 
                 setTimeout(() => {
                     toggleBW(bwEnabled);
@@ -353,39 +391,21 @@
                 const msg = normalizeError(err);
                 console.error('Camera error:', err);
                 if (err && err.name === 'NotFoundError') {
-                    setStatus('Camera not found — make sure no other app is using it', 'error');
+                    setStatus('Camera not found', 'error');
                 } else if (err && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError')) {
-                    setStatus('Camera permission denied — check browser settings', 'error');
+                    setStatus('Camera permission denied', 'error');
                 } else if (err && err.name === 'NotReadableError') {
-                    setStatus('Camera in use by another app — close other camera apps', 'error');
+                    setStatus('Camera in use by another app', 'error');
                 } else {
                     setStatus('Camera error: ' + msg, 'error');
                 }
             }
         }
 
-        function stopCamera() {
-            if (html5QrCode) {
-                try {
-                    html5QrCode.stop().then(() => {
-                        cameraActive = false;
-                    }).catch(() => {
-                        cameraActive = false;
-                    });
-                } catch(e) {
-                    cameraActive = false;
-                }
-            }
-            cameraActive = false;
-        }
-
-        // OCR fallback: try to read any text in the image
         async function runOcr(imageSrc) {
             setStatus('Trying text recognition...', 'success');
             try {
-                const result = await Tesseract.recognize(imageSrc, 'eng', {
-                    logger: () => {}
-                });
+                const result = await Tesseract.recognize(imageSrc, 'eng', { logger: () => {} });
                 return result;
             } catch(e) {
                 return null;
@@ -393,13 +413,11 @@
         }
 
         function cleanOcrText(text) {
-            // Keep only alphanumeric, hyphen, underscore
             return text.replace(/[^a-zA-Z0-9\-\_]/g, '').trim();
         }
 
         function showOcrSuggestions(text, sourceEl) {
             const el = document.getElementById(sourceEl);
-            // Find candidates (alphanumeric strings 5+ chars)
             const words = text.split(/\s+/).map(w => cleanOcrText(w)).filter(w => w.length >= 5);
             const unique = [...new Set(words)];
 
@@ -412,7 +430,7 @@
 
             el.className = 'result-box ocr';
             el.innerHTML = '<p>📝 Text found in image — tap to use:</p><div class="ocr-candidates">' +
-                unique.map(w => 
+                unique.map(w =>
                     '<div class="ocr-candidate">' +
                     '<span>' + w + '</span>' +
                     '<button class="ocr-use-btn" onclick="useOcrCandidate(\'' + w.replace(/'/g, "\\'") + '\', \'' + sourceEl + '\')">Use this</button>' +
@@ -550,7 +568,6 @@
                         displayMsg = 'Could not read file — try a different image';
                     } else if (errMsg.includes('No MultiFormat Readers') ||
                                errMsg.includes('No MultiFormat')) {
-                        // Barcode not found — try OCR fallback
                         const ocrResult = await runOcr(e.target.result);
                         if (ocrResult && ocrResult.data && ocrResult.data.text) {
                             el.className = 'result-box';
