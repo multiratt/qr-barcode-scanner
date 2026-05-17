@@ -33,35 +33,36 @@
         .scanner-section { border: 1px solid #111; padding: 14px; margin-bottom: 14px; position: relative; }
         #reader { width: 100%; position: relative; }
         #reader video { width: 100% !important; border-radius: 0; object-fit: contain; }
-        /* B&W filter applied to video feed */
         #reader video.bw-filter { filter: grayscale(100%) contrast(130%) brightness(105%); }
-        #qr-shrink-fit { width: 100% !important; }
-        #qr-shrink-fit video { width: 100% !important; object-fit: contain; }
         /* Scan line animation */
         #reader::before {
             content: '';
             position: absolute;
-            left: 0; right: 0;
+            left: 5%; right: 5%;
             height: 2px;
-            background: rgba(255,0,0,0.7);
+            background: rgba(220,0,0,0.6);
             z-index: 10;
             pointer-events: none;
             animation: scanline 2s linear infinite;
             display: none;
+            border-radius: 2px;
         }
         #reader.scanning::before { display: block; }
         @keyframes scanline {
-            0% { top: 10%; }
-            50% { top: 90%; }
-            100% { top: 10%; }
+            0% { top: 15%; }
+            50% { top: 85%; }
+            100% { top: 15%; }
         }
         .result-box { background: #f5f5f5; padding: 10px; margin-top: 10px; font-size: 13px; word-break: break-all; }
         .result-box.success { background: #d4edda; }
         .result-box.duplicate { background: #fff3cd; }
+        .result-box.error { background: #f8d7da; }
         .upload-section { display: none; }
         .upload-section.active { display: block; }
         .file-input { width: 100%; padding: 10px; border: 1px solid #111; font-family: inherit; font-size: 12px; }
         #upload-preview { max-width: 100%; margin-top: 10px; display: none; }
+        #upload-preview.bw-filter { filter: grayscale(100%) contrast(130%) brightness(105%); }
+        .camera-status { font-size: 11px; color: #888; margin-top: 8px; }
         .history-section { margin-top: 20px; }
         .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .history-header h2 { font-size: 13px; font-weight: 600; }
@@ -91,7 +92,7 @@
         <header>
             <div style="display:flex;align-items:center">
                 <h1>Barcode Scanner</h1>
-                <span class="version-badge" id="versionBadge">v1.4.0</span>
+                <span class="version-badge" id="versionBadge">v1.5.0</span>
             </div>
             <button class="btn" id="exportBtn">Export TXT</button>
         </header>
@@ -123,6 +124,7 @@
 
         <div class="scanner-section camera-section active">
             <div id="reader"></div>
+            <div id="cameraStatus" class="camera-status"></div>
             <div id="cameraResult" class="result-box hidden"></div>
         </div>
 
@@ -145,11 +147,12 @@
         <!-- Footer: Changelog -->
         <div class="footer">
             <div class="changelog-toggle" onclick="document.getElementById('changelog').classList.toggle('visible')">
-                ▼ <span id="changelogLabel">Changelog v1.4.0</span>
+                ▼ <span id="changelogLabel">Changelog v1.5.0</span>
             </div>
             <div class="changelog" id="changelog">
-                <div class="changelog-item"><strong>v1.4.0</strong> — B&amp;W mode (grayscale + high contrast) to fix focus issues; better dedup (5s cooldown, exact match only); version &amp; changelog footer added.</div>
-                <div class="changelog-item"><strong>v1.3.0</strong> — Shape selector (Square/Tall/Wide/Barcode) + manual focus slider added.</div>
+                <div class="changelog-item"><strong>v1.5.0</strong> — Camera: fixed 'Requested device not found' by using any/front camera fallback. Upload: fixed scanFile() to use correct 3-arg signature (qrbox dimensions as object, not config). Add camera status indicator.</div>
+                <div class="changelog-item"><strong>v1.4.0</strong> — B&amp;W mode (grayscale + high contrast); better dedup (5s cooldown); version &amp; changelog footer.</div>
+                <div class="changelog-item"><strong>v1.3.0</strong> — Shape selector (Square/Tall/Wide/Barcode) + manual focus slider.</div>
                 <div class="changelog-item"><strong>v1.2.0</strong> — Camera/upload tabs, history with export/clear, cooldown 3s dedup.</div>
                 <div class="changelog-item"><strong>v1.1.0</strong> — Multi-format support (Code128, EAN, UPC, ITF, QR).</div>
                 <div class="changelog-item"><strong>v1.0.0</strong> — Initial release.</div>
@@ -158,9 +161,9 @@
     </div>
 
     <script>
-        const VERSION = '1.4.0';
+        const VERSION = '1.5.0';
         const STORAGE_KEY = 'barcode_history';
-        const SCAN_COOLDOWN_MS = 5000; // 5 sec cooldown for duplicates
+        const SCAN_COOLDOWN_MS = 5000;
         let html5QrCode;
         let cameraActive = false;
         let lastScannedValue = '';
@@ -169,7 +172,6 @@
         let bwEnabled = true;
         let restarting = false;
 
-        // Shape presets (width x height)
         const SHAPES = {
             square:  { width: 220, height: 220, aspectRatio: 1.0 },
             tall:    { width: 180, height: 280, aspectRatio: 0.65 },
@@ -194,32 +196,32 @@
             });
         });
 
-        // Shape selector
         function setShape(shape) {
             if (shape === currentShape) return;
             currentShape = shape;
             document.querySelectorAll('.shape-btn').forEach(b => {
                 b.classList.toggle('active', b.dataset.shape === shape);
             });
-            if (cameraActive) {
-                restartCamera();
-            }
+            if (cameraActive) restartCamera();
         }
 
-        // B&W toggle
         function toggleBW(enabled) {
             bwEnabled = enabled;
-            const videos = document.querySelectorAll('#reader video');
-            videos.forEach(v => v.classList.toggle('bw-filter', enabled));
-            const reader = document.getElementById('reader');
-            reader.classList.toggle('scanning', enabled);
+            document.querySelectorAll('#reader video').forEach(v => v.classList.toggle('bw-filter', enabled));
+            document.getElementById('reader').classList.toggle('scanning', enabled);
+            const up = document.getElementById('upload-preview');
+            if (enabled) up.classList.add('bw-filter');
+            else up.classList.remove('bw-filter');
         }
 
-        // Build scan config
+        function setStatus(msg) {
+            document.getElementById('cameraStatus').textContent = msg;
+        }
+
         function getScanConfig() {
             const shape = SHAPES[currentShape];
             return {
-                fps: 4,
+                fps: 5,
                 qrbox: { width: shape.width, height: shape.height },
                 aspectRatio: shape.aspectRatio,
                 formatsToSupport: [
@@ -239,22 +241,45 @@
 
         async function startCamera() {
             if (cameraActive || restarting) return;
+            setStatus('Requesting camera...');
             try {
                 html5QrCode = new Html5Qrcode("reader");
 
-                const cameras = await Html5Qrcode.getCameras();
+                // Get camera list
+                let cameras = [];
+                try {
+                    cameras = await Html5Qrcode.getCameras();
+                } catch(e) {
+                    setStatus('Camera access denied or unavailable');
+                    return;
+                }
+
                 let cameraId = null;
                 if (cameras && cameras.length > 0) {
-                    const back = cameras.find(c => c.label.toLowerCase().includes('back') || c.label.toLowerCase().includes('rear'));
-                    cameraId = back ? back.id : cameras[0].id;
+                    // Find back/rear camera, fallback to first with non-empty id
+                    const valid = cameras.filter(c => c.id && c.id.trim() !== '');
+                    if (valid.length === 0) {
+                        // Use first camera even if id looks empty (some browsers report empty ids)
+                        cameraId = cameras[0].id;
+                        setStatus('Using camera (id available: ' + (cameraId ? 'yes' : 'no') + ')');
+                    } else {
+                        const back = valid.find(c =>
+                            c.label.toLowerCase().includes('back') ||
+                            c.label.toLowerCase().includes('rear') ||
+                            c.label.toLowerCase().includes('environment')
+                        );
+                        cameraId = back ? back.id : valid[0].id;
+                        setStatus('Found ' + cameras.length + ' camera(s): ' + valid.map(c => c.label || 'unnamed').join(', '));
+                    }
+                } else {
+                    setStatus('No cameras found on this device');
+                    return;
                 }
 
                 const onScanSuccess = (decodedText, decodedResult) => {
                     const now = Date.now();
-                    // Strict dedup: exact same value AND within cooldown window
                     const isDuplicate = (decodedText === lastScannedValue) && (now - lastScannedTime < SCAN_COOLDOWN_MS);
                     if (isDuplicate) {
-                        // Show brief "already scanned" feedback
                         const el = document.getElementById('cameraResult');
                         el.textContent = '↺ Already scanned';
                         el.classList.remove('hidden');
@@ -272,37 +297,47 @@
                 };
 
                 const config = getScanConfig();
-                const constraints = {
-                    facingMode: "environment",
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                };
-                const useDeviceId = cameraId ? { deviceId: { exact: cameraId } } : constraints;
 
-                await html5QrCode.start(useDeviceId, config, onScanSuccess, () => {});
+                // Build constraints — use simple any-camera constraint first
+                // Only use exact deviceId if we have a non-empty string id
+                let constraints;
+                if (cameraId && cameraId.trim() !== '') {
+                    constraints = { deviceId: { exact: cameraId } };
+                } else {
+                    // No valid deviceId — use facingMode instead
+                    constraints = { facingMode: "environment" };
+                    setStatus('Using environment-facing camera');
+                }
 
-                // Apply B&W filter
-                toggleBW(bwEnabled);
+                await html5QrCode.start(constraints, config, onScanSuccess, () => {});
+
+                // Apply B&W filter after start
+                setTimeout(() => {
+                    toggleBW(bwEnabled);
+                    setStatus('Camera active');
+                }, 500);
 
                 cameraActive = true;
             } catch (err) {
                 console.error('Camera error:', err);
-                document.getElementById('cameraResult').textContent = 'Camera error: ' + err.message;
-                document.getElementById('cameraResult').classList.remove('hidden');
+                const msg = err.message || String(err);
+                if (msg.includes('NotFoundError') || msg.includes('Requested device not found')) {
+                    setStatus('Camera not found — try refreshing or check permissions');
+                } else if (msg.includes('NotAllowed') || msg.includes('Permission')) {
+                    setStatus('Camera permission denied — allow camera in browser settings');
+                } else {
+                    setStatus('Camera error: ' + msg);
+                }
             }
         }
 
         async function restartCamera() {
             if (restarting) return;
             restarting = true;
-            const reader = document.getElementById('reader');
-            reader.classList.remove('scanning');
+            document.getElementById('reader').classList.remove('scanning');
             stopCamera();
-            // Wait for camera to fully stop
             await new Promise(r => setTimeout(r, 800));
-            // Clear the reader div
-            const readerEl = document.getElementById('reader');
-            readerEl.innerHTML = '';
+            document.getElementById('reader').innerHTML = '';
             await startCamera();
             restarting = false;
         }
@@ -310,14 +345,11 @@
         function stopCamera() {
             if (html5QrCode) {
                 try {
-                    html5QrCode.stop().then(() => {
-                        cameraActive = false;
-                    }).catch(() => { cameraActive = false; });
+                    html5QrCode.stop().then(() => { cameraActive = false; }).catch(() => { cameraActive = false; });
                 } catch(e) { cameraActive = false; }
             }
         }
 
-        // Load history
         function getHistory() {
             try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
             catch { return []; }
@@ -329,7 +361,6 @@
 
         function addToHistory(value, type) {
             const history = getHistory();
-            // Also dedup in history
             if (history.length > 0 && history[0].value === value) return;
             history.unshift({ value, type, time: new Date().toLocaleString() });
             if (history.length > 200) history = history.slice(0, 200);
@@ -373,7 +404,6 @@
             return div.innerHTML;
         }
 
-        // Export
         document.getElementById('exportBtn').addEventListener('click', () => {
             const history = getHistory();
             if (history.length === 0) { alert('No items to export'); return; }
@@ -387,53 +417,60 @@
 
         document.getElementById('clearAllBtn').addEventListener('click', clearAll);
 
-        // Image upload scanner
+        // --- File Upload Scanner ---
+        // IMPORTANT: html5-qrcode scanFile() signature is:
+        //   scanFile(file, showImageFallback, config_qrbox_dimension?)
+        // The 3rd arg for file scan is ONLY qrbox {width, height} as a plain object (NO fps, NO formats)
         const fileInput = document.getElementById('fileInput');
         const preview = document.getElementById('upload-preview');
+        let uploadScanner = null;
 
         fileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
+
+            // Reset preview
+            preview.src = '';
+            preview.style.display = 'none';
+            preview.classList.remove('bw-filter');
+            document.getElementById('uploadResult').classList.add('hidden');
+
             const reader = new FileReader();
             reader.onload = async (e) => {
                 preview.src = e.target.result;
                 preview.style.display = 'block';
-                // Apply B&W filter to uploaded image too
-                if (bwEnabled) {
-                    preview.style.filter = 'grayscale(100%) contrast(130%) brightness(105%)';
-                } else {
-                    preview.style.filter = '';
-                }
+                if (bwEnabled) preview.classList.add('bw-filter');
+
+                // Create new scanner instance for the img element
                 try {
                     const shape = SHAPES[currentShape];
-                    const scanner = new Html5Qrcode("upload-preview");
-                    const result = await scanner.scanFile(file, false, {
-                        fps: 4,
-                        qrbox: { width: shape.width, height: shape.height },
-                        supportedFormats: [
-                            Html5QrcodeScannerFormat.CODE_128,
-                            Html5QrcodeScannerFormat.CODE_39,
-                            Html5QrcodeScannerFormat.CODE_93,
-                            Html5QrcodeScannerFormat.CODABAR,
-                            Html5QrcodeScannerFormat.EAN_13,
-                            Html5QrcodeScannerFormat.EAN_8,
-                            Html5QrcodeScannerFormat.UPC_A,
-                            Html5QrcodeScannerFormat.UPC_E,
-                            Html5QrcodeScannerFormat.ITF,
-                            Html5QrcodeScannerFormat.QR_CODE
-                        ]
+                    uploadScanner = new Html5Qrcode("upload-preview");
+
+                    // scanFile(file, showImageFallback=true, qrboxDimension?)
+                    // qrboxDimension must be { width: number, height: number } — NOT a full config object!
+                    // fps and formatsToSupport are NOT supported for file scanning in html5-qrcode@2.3.8
+                    const result = await uploadScanner.scanFile(file, true, {
+                        width: shape.width,
+                        height: shape.height
                     });
-                    if (result.length > 0) {
+
+                    if (result && result.length > 0) {
                         const r = result[0];
                         showResult('uploadResult', r.text, r.format, true);
                         addToHistory(r.text, r.format);
                     }
                 } catch (err) {
                     const el = document.getElementById('uploadResult');
-                    el.textContent = 'No barcode found — try clearer image';
+                    const msg = err.message || String(err);
+                    if (msg.includes('No MultiFormat Readers')) {
+                        el.textContent = 'No barcode found — image may be too blurry or small';
+                    } else {
+                        el.textContent = 'Scan error: ' + msg;
+                    }
                     el.classList.remove('hidden');
                     el.classList.remove('success');
                     el.classList.remove('duplicate');
+                    el.classList.add('error');
                 }
             };
             reader.readAsDataURL(file);
@@ -444,6 +481,7 @@
             el.textContent = success ? `✓ ${text} (${type})` : `${text} (${type})`;
             el.classList.remove('hidden');
             el.classList.remove('duplicate');
+            el.classList.remove('error');
             el.classList.toggle('success', !!success);
         }
 
