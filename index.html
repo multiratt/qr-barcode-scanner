@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://unpkg.com/tesseract.js@5.0.4/dist/tesseract.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'JetBrains Mono', monospace; background: #fff; color: #111; min-height: 100vh; padding: 20px; }
@@ -56,6 +57,7 @@
         .result-box.success { background: #d4edda; }
         .result-box.duplicate { background: #fff3cd; }
         .result-box.error { background: #f8d7da; }
+        .result-box.ocr { background: #e7f3ff; border: 1px solid #b8d4f5; }
         .upload-section { display: none; }
         .upload-section.active { display: block; }
         .file-input { width: 100%; padding: 10px; border: 1px solid #111; font-family: inherit; font-size: 12px; }
@@ -78,7 +80,15 @@
         .empty-state { padding: 28px; text-align: center; color: #aaa; font-size: 12px; }
         .hidden { display: none; }
 
-        /* Footer */
+        /* OCR suggestions */
+        .ocr-suggestions { margin-top: 8px; }
+        .ocr-suggestions p { font-size: 11px; color: #555; margin-bottom: 6px; }
+        .ocr-candidates { display: flex; flex-direction: column; gap: 4px; }
+        .ocr-candidate { display: flex; align-items: center; gap: 8px; }
+        .ocr-candidate span { font-size: 12px; font-weight: 600; }
+        .ocr-use-btn { background: #111; color: #fff; border: none; padding: 4px 10px; font-size: 11px; cursor: pointer; font-family: inherit; }
+        .ocr-use-btn:hover { background: #444; }
+
         .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #ddd; }
         .changelog-toggle { font-size: 11px; color: #888; cursor: pointer; display: flex; align-items: center; gap: 6px; user-select: none; }
         .changelog-toggle:hover { color: #111; }
@@ -93,12 +103,11 @@
         <header>
             <div style="display:flex;align-items:center">
                 <h1>Barcode Scanner</h1>
-                <span class="version-badge" id="versionBadge">v1.7.0</span>
+                <span class="version-badge" id="versionBadge">v1.8.0</span>
             </div>
             <button class="btn" id="exportBtn">Export TXT</button>
         </header>
 
-        <!-- Controls -->
         <div class="controls">
             <div class="control-row">
                 <label>Shape</label>
@@ -145,15 +154,16 @@
             </div>
         </div>
 
-        <!-- Footer: Changelog -->
         <div class="footer">
             <div class="changelog-toggle" onclick="document.getElementById('changelog').classList.toggle('visible')">
-                ▼ <span id="changelogLabel">Changelog v1.7.0</span>
+                ▼ <span id="changelogLabel">Changelog v1.8.0</span>
             </div>
             <div class="changelog" id="changelog">
-                <div class="changelog-item"><strong>v1.7.0</strong> — Camera: back camera as default, Html5QrcodeSupportedFormats (not ScannerFormat). Upload: fixed Event error handler.</div>
-                <div class="changelog-item"><strong>v1.6.0</strong> — Upload: fixed "undefined" error display by handling Event objects in catch.</div>
-                <div class="changelog-item"><strong>v1.4.0</strong> — B&amp;W mode (grayscale + high contrast); better dedup (5s cooldown); version &amp; changelog footer.</div>
+                <div class="changelog-item"><strong>v1.8.0</strong> — OCR fallback: when no barcode found but text detected, show candidates to pick. Camera restart fix on shape change.</div>
+                <div class="changelog-item"><strong>v1.7.0</strong> — Camera: back camera as default. Fixed Html5QrcodeSupportedFormats (not ScannerFormat).</div>
+                <div class="changelog-item"><strong>v1.6.0</strong> — Upload: fixed "undefined" error by handling Event objects in catch.</div>
+                <div class="changelog-item"><strong>v1.5.0</strong> — Camera: fixed 'Requested device not found' fallback. Upload: fixed scanFile() 3-arg signature.</div>
+                <div class="changelog-item"><strong>v1.4.0</strong> — B&amp;W mode (grayscale + high contrast); 5s dedup; version &amp; changelog footer.</div>
                 <div class="changelog-item"><strong>v1.3.0</strong> — Shape selector (Square/Tall/Wide/Barcode) + manual focus slider.</div>
                 <div class="changelog-item"><strong>v1.2.0</strong> — Camera/upload tabs, history with export/clear, cooldown 3s dedup.</div>
                 <div class="changelog-item"><strong>v1.1.0</strong> — Multi-format support (Code128, EAN, UPC, ITF, QR).</div>
@@ -163,7 +173,7 @@
     </div>
 
     <script>
-        const VERSION = '1.6.0';
+        const VERSION = '1.8.0';
         const STORAGE_KEY = 'barcode_history';
         const SCAN_COOLDOWN_MS = 5000;
         let html5QrCode;
@@ -204,7 +214,12 @@
             document.querySelectorAll('.shape-btn').forEach(b => {
                 b.classList.toggle('active', b.dataset.shape === shape);
             });
-            if (cameraActive) restartCamera();
+            // Always restart camera when shape changes — clear old scanner first
+            if (cameraActive) {
+                stopCamera();
+                document.getElementById('reader').innerHTML = '';
+            }
+            startCamera();
         }
 
         function toggleBW(enabled) {
@@ -222,18 +237,14 @@
             el.className = 'camera-status' + (type ? ' ' + type : '');
         }
 
-        // Normalize error from various sources (string, Error, Event, etc.)
         function normalizeError(e) {
             if (typeof e === 'string') return e;
             if (typeof e === 'undefined') return 'Unknown error (undefined)';
             if (e === null) return 'Unknown error (null)';
-            // Event objects (onerror, onabort, etc.)
             if (e instanceof Event || typeof e.type === 'string') {
                 return 'Image load failed: ' + (e.type || 'unknown Event');
             }
-            // Standard Error
             if (e.message) return e.message;
-            // Fallback
             return String(e);
         }
 
@@ -259,10 +270,9 @@
         }
 
         async function startCamera() {
-            if (cameraActive || restarting) return;
+            if (restarting) return;
             setStatus('Requesting camera...');
 
-            // Step 1: Check enumerateDevices first
             let cameras = [];
             try {
                 const devices = await navigator.mediaDevices.enumerateDevices();
@@ -279,13 +289,13 @@
             }
 
             try {
+                // Clear previous scanner
+                document.getElementById('reader').innerHTML = '';
                 html5QrCode = new Html5Qrcode("reader");
 
-                // Pick back/environment camera if available, otherwise first camera
-                const backPatterns = ['back', 'rear', 'environment', 'เลนส์หลัง', 'หลัง'];
-                const frontPatterns = ['front', 'user', 'เลนส์หน้า', 'หน้า'];
-                
-                let cam = cameras[0]; // fallback
+                // Pick back/environment camera
+                const backPatterns = ['back', 'rear', 'environment'];
+                let cam = cameras[0];
                 for (const c of cameras) {
                     const label = (c.label || '').toLowerCase();
                     if (backPatterns.some(p => label.includes(p))) {
@@ -293,10 +303,9 @@
                         break;
                     }
                 }
-                
-                const camLabel = cam.label || 'Camera ' + cam.deviceId.substring(0, 8);
+
+                const camLabel = cam.label || 'Camera ' + (cam.deviceId ? cam.deviceId.substring(0, 8) : '?');
                 const isBack = backPatterns.some(p => (cam.label || '').toLowerCase().includes(p));
-                setStatus('Camera: ' + camLabel + (isBack ? ' (back)' : ' (auto)'), 'success');
 
                 const onScanSuccess = (decodedText, decodedResult) => {
                     const now = Date.now();
@@ -314,13 +323,17 @@
                     }
                     lastScannedValue = decodedText;
                     lastScannedTime = now;
-                    showResult('cameraResult', decodedText, decodedResult.result.format.formatName, true);
-                    addToHistory(decodedText, decodedResult.result.format.formatName);
+                    const fmtName = decodedResult.result.format ? decodedResult.result.format.formatName : 'barcode';
+                    showResult('cameraResult', decodedText, fmtName, true);
+                    addToHistory(decodedText, fmtName);
+                };
+
+                const onScanFailure = (errorMessage, errorResult) => {
+                    // Silently ignore — camera is scanning
                 };
 
                 const config = getScanConfig();
 
-                // Try deviceId first, then fallback to facingMode
                 let constraints;
                 if (cam.deviceId && cam.deviceId.trim() !== '') {
                     constraints = { deviceId: { exact: cam.deviceId } };
@@ -328,12 +341,12 @@
                     constraints = { facingMode: "environment" };
                 }
 
-                await html5QrCode.start(constraints, config, onScanSuccess, () => {});
+                await html5QrCode.start(constraints, config, onScanSuccess, onScanFailure);
 
                 setTimeout(() => {
                     toggleBW(bwEnabled);
-                    setStatus('Camera active: ' + camLabel, 'success');
-                }, 500);
+                    setStatus('Camera: ' + camLabel + (isBack ? ' (back)' : ''), 'success');
+                }, 800);
 
                 cameraActive = true;
             } catch (err) {
@@ -351,23 +364,67 @@
             }
         }
 
-        async function restartCamera() {
-            if (restarting) return;
-            restarting = true;
-            document.getElementById('reader').classList.remove('scanning');
-            stopCamera();
-            await new Promise(r => setTimeout(r, 800));
-            document.getElementById('reader').innerHTML = '';
-            await startCamera();
-            restarting = false;
-        }
-
         function stopCamera() {
             if (html5QrCode) {
                 try {
-                    html5QrCode.stop().then(() => { cameraActive = false; }).catch(() => { cameraActive = false; });
-                } catch(e) { cameraActive = false; }
+                    html5QrCode.stop().then(() => {
+                        cameraActive = false;
+                    }).catch(() => {
+                        cameraActive = false;
+                    });
+                } catch(e) {
+                    cameraActive = false;
+                }
             }
+            cameraActive = false;
+        }
+
+        // OCR fallback: try to read any text in the image
+        async function runOcr(imageSrc) {
+            setStatus('Trying text recognition...', 'success');
+            try {
+                const result = await Tesseract.recognize(imageSrc, 'eng', {
+                    logger: () => {}
+                });
+                return result;
+            } catch(e) {
+                return null;
+            }
+        }
+
+        function cleanOcrText(text) {
+            // Keep only alphanumeric, hyphen, underscore
+            return text.replace(/[^a-zA-Z0-9\-\_]/g, '').trim();
+        }
+
+        function showOcrSuggestions(text, sourceEl) {
+            const el = document.getElementById(sourceEl);
+            // Find candidates (alphanumeric strings 5+ chars)
+            const words = text.split(/\s+/).map(w => cleanOcrText(w)).filter(w => w.length >= 5);
+            const unique = [...new Set(words)];
+
+            if (unique.length === 0) {
+                el.textContent = 'No text found in image';
+                el.classList.remove('hidden');
+                el.classList.add('error');
+                return;
+            }
+
+            el.className = 'result-box ocr';
+            el.innerHTML = '<p>📝 Text found in image — tap to use:</p><div class="ocr-candidates">' +
+                unique.map(w => 
+                    '<div class="ocr-candidate">' +
+                    '<span>' + w + '</span>' +
+                    '<button class="ocr-use-btn" onclick="useOcrCandidate(\'' + w.replace(/'/g, "\\'") + '\', \'' + sourceEl + '\')">Use this</button>' +
+                    '</div>'
+                ).join('') +
+                '</div>';
+            el.classList.remove('hidden');
+        }
+
+        function useOcrCandidate(value, sourceEl) {
+            showResult(sourceEl, value, 'OCR', true);
+            addToHistory(value, 'OCR');
         }
 
         function getHistory() {
@@ -424,6 +481,16 @@
             return div.innerHTML;
         }
 
+        function showResult(elementId, text, type, success) {
+            const el = document.getElementById(elementId);
+            el.textContent = success ? `✓ ${text} (${type})` : `${text} (${type})`;
+            el.classList.remove('hidden');
+            el.classList.remove('duplicate');
+            el.classList.remove('error');
+            el.classList.remove('ocr');
+            el.classList.toggle('success', !!success);
+        }
+
         document.getElementById('exportBtn').addEventListener('click', () => {
             const history = getHistory();
             if (history.length === 0) { alert('No items to export'); return; }
@@ -445,7 +512,6 @@
             const file = e.target.files[0];
             if (!file) return;
 
-            // Reset
             preview.src = '';
             preview.style.display = 'none';
             preview.classList.remove('bw-filter');
@@ -453,7 +519,6 @@
             resultEl.classList.add('hidden');
             resultEl.className = 'result-box';
 
-            // Show loading
             resultEl.textContent = 'Processing image...';
             resultEl.classList.remove('hidden');
 
@@ -467,16 +532,11 @@
                     const shape = SHAPES[currentShape];
                     const scanner = new Html5Qrcode("upload-preview");
 
-                    // scanFile(file, showImageFallback=true, qrboxDimension?)
-                    // qrboxDimension must be { width, height } — NOT full config
                     const result = await scanner.scanFile(file, true, {
                         width: shape.width,
                         height: shape.height
                     });
 
-                    // scanFile returns decodedText (string) directly
-                    // But html5-qrcode v2.3.8 returns decodedText string, not {text, format}
-                    // So we construct the result ourselves
                     if (result) {
                         showResult('uploadResult', result, 'scanned', true);
                         addToHistory(result, 'upload');
@@ -484,18 +544,30 @@
                 } catch (err) {
                     const errMsg = normalizeError(err);
                     const el = document.getElementById('uploadResult');
-                    
-                    // Check for specific error patterns
+
                     let displayMsg = errMsg;
                     if (errMsg.includes('imageFile argument is mandatory')) {
                         displayMsg = 'Could not read file — try a different image';
-                    } else if (errMsg.includes('No MultiFormat Readers') || 
+                    } else if (errMsg.includes('No MultiFormat Readers') ||
                                errMsg.includes('No MultiFormat')) {
-                        displayMsg = 'No barcode found — image may be blurry or barcode not in supported formats';
+                        // Barcode not found — try OCR fallback
+                        const ocrResult = await runOcr(e.target.result);
+                        if (ocrResult && ocrResult.data && ocrResult.data.text) {
+                            el.className = 'result-box';
+                            el.classList.remove('hidden');
+                            el.classList.remove('success');
+                            el.classList.remove('duplicate');
+                            showOcrSuggestions(ocrResult.data.text, 'uploadResult');
+                        } else {
+                            el.textContent = 'No barcode found — image may be blurry';
+                            el.classList.remove('hidden');
+                            el.classList.add('error');
+                        }
+                        return;
                     } else if (errMsg.includes('Image load failed')) {
                         displayMsg = 'Could not load image file — format not supported';
                     }
-                    
+
                     el.textContent = displayMsg;
                     el.classList.remove('hidden');
                     el.classList.remove('success');
@@ -513,15 +585,6 @@
 
             reader.readAsDataURL(file);
         });
-
-        function showResult(elementId, text, type, success) {
-            const el = document.getElementById(elementId);
-            el.textContent = success ? `✓ ${text} (${type})` : `${text} (${type})`;
-            el.classList.remove('hidden');
-            el.classList.remove('duplicate');
-            el.classList.remove('error');
-            el.classList.toggle('success', !!success);
-        }
 
         // Init
         document.getElementById('versionBadge').textContent = `v${VERSION}`;
