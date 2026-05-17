@@ -106,7 +106,7 @@
         <header>
             <div style="display:flex;align-items:center">
                 <h1>Barcode Scanner</h1>
-                <span class="version-badge" id="versionBadge">v1.9.0</span>
+                <span class="version-badge" id="versionBadge">v1.10.0</span>
             </div>
             <button class="btn" id="exportBtn">Export TXT</button>
         </header>
@@ -161,10 +161,10 @@
 
         <div class="footer">
             <div class="changelog-toggle" onclick="document.getElementById('changelog').classList.toggle('visible')">
-                ▼ <span id="changelogLabel">Changelog v1.9.0</span>
+                ▼ <span id="changelogLabel">Changelog v1.10.0</span>
             </div>
             <div class="changelog" id="changelog">
-                <div class="changelog-item"><strong>v1.9.0</strong> — Shape reduced to Square + Tall. Flash toggle button. Camera refreshes on shape change / page reload.</div>
+                <div class="changelog-item"><strong>v1.10.0</strong> — Format stability: require 3 consistent reads before accepting. Show candidate picker when multiple formats detected or result unstable.</div>
                 <div class="changelog-item"><strong>v1.8.0</strong> — OCR fallback when no barcode found. Camera restart fix on shape change.</div>
                 <div class="changelog-item"><strong>v1.7.0</strong> — Camera: back camera as default. Fixed Html5QrcodeSupportedFormats.</div>
                 <div class="changelog-item"><strong>v1.6.0</strong> — Upload: fixed "undefined" error by handling Event objects in catch.</div>
@@ -219,6 +219,7 @@
             document.querySelectorAll('.shape-btn').forEach(b => {
                 b.classList.toggle('active', b.dataset.shape === shape);
             });
+            clearSessionCandidates();
             refreshCamera();
         }
 
@@ -336,25 +337,80 @@
                 const camLabel = cam.label || 'Camera ' + (cam.deviceId ? cam.deviceId.substring(0, 8) : '?');
                 const isBack = backPatterns.some(p => (cam.label || '').toLowerCase().includes(p));
 
-                const onScanSuccess = (decodedText, decodedResult) => {
+                const SESSION_COOLDOWN_MS = 3000;
+        const FORMAT_STABILITY_THRESHOLD = 3; // need 3 same results to trust
+        let sessionScanCandidates = {}; // value -> {format, count, firstSeen}
+
+        function clearSessionCandidates() {
+            sessionScanCandidates = {};
+        }
+
+        function addSessionCandidate(value, format) {
+            if (!sessionScanCandidates[value]) {
+                sessionScanCandidates[value] = { format, count: 0, firstSeen: Date.now() };
+            }
+            sessionScanCandidates[value].count++;
+        }
+
+        function getStableResult() {
+            const entries = Object.entries(sessionScanCandidates);
+            // Find value with highest count >= threshold
+            const stable = entries.filter(([v, d]) => d.count >= FORMAT_STABILITY_THRESHOLD);
+            if (stable.length > 0) {
+                stable.sort((a, b) => b[1].count - a[1].count);
+                return { value: stable[0][0], format: stable[0][1].format, confidence: 'stable' };
+            }
+            // No stable result yet — return highest count even if < threshold
+            if (entries.length > 0) {
+                entries.sort((a, b) => b[1].count - a[1].count);
+                return { value: entries[0][0], format: entries[0][1].format, confidence: 'unstable' };
+            }
+            return null;
+        }
+
+        function showFormatCandidates(value, format) {
+            const el = document.getElementById('cameraResult');
+            const candidates = Object.entries(sessionScanCandidates)
+                .sort((a, b) => b[1].count - a[1].count)
+                .map(([v, d]) => `<div class="ocr-candidate"><span>${v}</span><span style="color:#888;font-size:10px">${d.format} ×${d.count}</span><button class="ocr-use-btn" onclick="useFormatCandidate('${v.replace(/'/g, "\\'")}', '${d.format}')">Use</button></div>`)
+                .join('');
+
+            el.className = 'result-box ocr';
+            el.innerHTML = `<p>🔍 Multiple possibilities — tap to confirm:</p><div class="ocr-candidates">${candidates}</div>`;
+            el.classList.remove('hidden');
+        }
+
+        function useFormatCandidate(value, format) {
+            showResult('cameraResult', value, format, true);
+            addToHistory(value, format);
+            clearSessionCandidates();
+        }
+
+        const onScanSuccess = (decodedText, decodedResult) => {
                     const now = Date.now();
-                    const isDuplicate = (decodedText === lastScannedValue) && (now - lastScannedTime < SCAN_COOLDOWN_MS);
-                    if (isDuplicate) {
-                        const el = document.getElementById('cameraResult');
-                        el.textContent = '↺ Already scanned';
-                        el.classList.remove('hidden');
-                        el.classList.remove('success');
-                        el.classList.add('duplicate');
-                        setTimeout(() => {
-                            if (el.textContent === '↺ Already scanned') el.classList.add('hidden');
-                        }, 1500);
+                    const fmtName = decodedResult.result && decodedResult.result.format
+                        ? decodedResult.result.format.formatName
+                        : 'barcode';
+
+                    // If same value within cooldown — skip
+                    if (decodedText === lastScannedValue && (now - lastScannedTime < SCAN_COOLDOWN_MS)) {
                         return;
                     }
-                    lastScannedValue = decodedText;
-                    lastScannedTime = now;
-                    const fmtName = decodedResult.result.format ? decodedResult.result.format.formatName : 'barcode';
-                    showResult('cameraResult', decodedText, fmtName, true);
-                    addToHistory(decodedText, fmtName);
+
+                    addSessionCandidate(decodedText, fmtName);
+                    const best = getStableResult();
+
+                    if (best.confidence === 'stable' && Object.keys(sessionScanCandidates).length === 1) {
+                        // Only one candidate with enough count — accept it
+                        lastScannedValue = decodedText;
+                        lastScannedTime = now;
+                        showResult('cameraResult', best.value, best.format, true);
+                        addToHistory(best.value, best.format);
+                        clearSessionCandidates();
+                    } else {
+                        // Multiple candidates OR unstable — show picker
+                        showFormatCandidates(decodedText, fmtName);
+                    }
                 };
 
                 const onScanFailure = (errorMessage, errorResult) => {};
