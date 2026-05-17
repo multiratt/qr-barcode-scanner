@@ -22,8 +22,9 @@
         .tab:not(.active) { background: #fff; }
         .scanner-section { border: 1px solid #111; padding: 16px; margin-bottom: 16px; }
         #reader { width: 100%; }
-        #reader video { width: 100% !important; border-radius: 0; }
+        #reader video { width: 100% !important; border-radius: 0; object-fit: contain; }
         .result-box { background: #f5f5f5; padding: 12px; margin-top: 12px; font-size: 14px; word-break: break-all; }
+        .result-box.success { background: #d4edda; }
         .upload-section { display: none; }
         .upload-section.active { display: block; }
         .file-input { width: 100%; padding: 12px; border: 1px solid #111; font-family: inherit; font-size: 13px; }
@@ -79,8 +80,13 @@
 
     <script>
         const STORAGE_KEY = 'barcode_history';
+        const SCAN_COOLDOWN_MS = 3000; // 3 sec cooldown before same code can be scanned again
+        const DIFFERENT_CODE_COOLDOWN_MS = 1500; // 1.5 sec between different codes
         let html5QrCode;
         let cameraActive = false;
+
+        // Deduplication state
+        let lastScanned = { value: '', timestamp: 0 };
 
         // Tab switching
         document.querySelectorAll('.tab').forEach(tab => {
@@ -174,25 +180,69 @@
             if (cameraActive) return;
             try {
                 html5QrCode = new Html5Qrcode("reader");
+
+                // Try to get available cameras first
+                const cameras = await Html5Qrcode.getCameras();
+                let cameraId = null;
+                if (cameras && cameras.length > 0) {
+                    // Prefer back camera
+                    const back = cameras.find(c => c.label.toLowerCase().includes('back') || c.label.toLowerCase().includes('rear'));
+                    cameraId = back ? back.id : cameras[0].id;
+                }
+
+                const config = {
+                    fps: 5, // Lower fps for better focus on small barcodes
+                    qrbox: { width: 280, height: 150 }, // Wider/shorter box for barcode scanning
+                    aspectRatio: 1.5, // Taller preview helps with focusing
+                    formatsToSupport: [
+                        Html5QrcodeScannerFormat.CODE_128,
+                        Html5QrcodeScannerFormat.CODE_39,
+                        Html5QrcodeScannerFormat.CODE_93,
+                        Html5QrcodeScannerFormat.CODABAR,
+                        Html5QrcodeScannerFormat.EAN_13,
+                        Html5QrcodeScannerFormat.EAN_8,
+                        Html5QrcodeScannerFormat.UPC_A,
+                        Html5QrcodeScannerFormat.UPC_E,
+                        Html5QrcodeScannerFormat.ITF,
+                        Html5QrcodeScannerFormat.QR_CODE
+                    ]
+                };
+
+                const onScanSuccess = (decodedText, decodedResult) => {
+                    const now = Date.now();
+                    const isDuplicate = (decodedText === lastScanned.value) &&
+                        (now - lastScanned.timestamp < SCAN_COOLDOWN_MS);
+
+                    if (isDuplicate) {
+                        // Same code scanned within cooldown — ignore silently
+                        return;
+                    }
+
+                    lastScanned = { value: decodedText, timestamp: now };
+                    showResult('cameraResult', decodedText, decodedResult.result.format.formatName, true);
+                    addToHistory(decodedText, decodedResult.result.format.formatName);
+                };
+
+                const configToUse = cameraId
+                    ? { ...config, deviceId: { exact: cameraId } }
+                    : config;
+
                 await html5QrCode.start(
-                    { facingMode: "environment" },
-                    { fps: 10, qrbox: { width: 250, height: 250 } },
-                    (decodedText, decodedResult) => {
-                        showResult('cameraResult', decodedText, decodedResult.result.format.formatName);
-                        addToHistory(decodedText, decodedResult.result.format.formatName);
-                    },
-                    () => {}
+                    cameraId ? { deviceId: { exact: cameraId } } : { facingMode: "environment" },
+                    config,
+                    onScanSuccess,
+                    () => {} // Ignore scan failures (normal when no code visible)
                 );
                 cameraActive = true;
             } catch (err) {
                 console.error('Camera error:', err);
-                document.getElementById('cameraResult').textContent = 'Camera not available';
+                document.getElementById('cameraResult').textContent = 'Camera not available: ' + err.message;
             }
         }
 
         function stopCamera() {
             if (html5QrCode && cameraActive) {
-                html5QrCode.stop().then(() => { cameraActive = false; });
+                html5QrCode.stop().then(() => { cameraActive = false; }).catch(() => {});
             }
         }
 
@@ -211,24 +261,42 @@
                 preview.style.display = 'block';
 
                 try {
-                    const result = await Html5Qrcode.scanFile(file, { fps: 10, qrbox: { width: 250, height: 250 } });
+                    const result = await Html5Qrcode.scanFile(file, false, {
+                        fps: 5,
+                        qrbox: { width: 280, height: 150 },
+                        aspectRatio: 1.5,
+                        supportedFormats: [
+                            Html5QrcodeScannerFormat.CODE_128,
+                            Html5QrcodeScannerFormat.CODE_39,
+                            Html5QrcodeScannerFormat.CODE_93,
+                            Html5QrcodeScannerFormat.CODABAR,
+                            Html5QrcodeScannerFormat.EAN_13,
+                            Html5QrcodeScannerFormat.EAN_8,
+                            Html5QrcodeScannerFormat.UPC_A,
+                            Html5QrcodeScannerFormat.UPC_E,
+                            Html5QrcodeScannerFormat.ITF,
+                            Html5QrcodeScannerFormat.QR_CODE
+                        ]
+                    });
                     if (result.length > 0) {
                         const r = result[0];
-                        showResult('uploadResult', r.text, r.format);
+                        showResult('uploadResult', r.text, r.format, true);
                         addToHistory(r.text, r.format);
                     }
                 } catch (err) {
-                    uploadResult.textContent = 'No barcode found in image';
+                    uploadResult.textContent = 'No barcode found — try a clearer image';
                     uploadResult.classList.remove('hidden');
+                    uploadResult.classList.remove('success');
                 }
             };
             reader.readAsDataURL(file);
         });
 
-        function showResult(elementId, text, type) {
+        function showResult(elementId, text, type, success) {
             const el = document.getElementById(elementId);
-            el.textContent = `${text} (${type})`;
+            el.textContent = success ? `✓ ${text} (${type})` : `${text} (${type})`;
             el.classList.remove('hidden');
+            el.classList.toggle('success', !!success);
         }
 
         // Init
