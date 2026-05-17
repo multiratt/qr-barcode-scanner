@@ -93,7 +93,7 @@
         <header>
             <div style="display:flex;align-items:center">
                 <h1>Barcode Scanner</h1>
-                <span class="version-badge" id="versionBadge">v1.6.0</span>
+                <span class="version-badge" id="versionBadge">v1.7.0</span>
             </div>
             <button class="btn" id="exportBtn">Export TXT</button>
         </header>
@@ -148,11 +148,11 @@
         <!-- Footer: Changelog -->
         <div class="footer">
             <div class="changelog-toggle" onclick="document.getElementById('changelog').classList.toggle('visible')">
-                ▼ <span id="changelogLabel">Changelog v1.6.0</span>
+                ▼ <span id="changelogLabel">Changelog v1.7.0</span>
             </div>
             <div class="changelog" id="changelog">
-                <div class="changelog-item"><strong>v1.6.0</strong> — Upload: fixed "undefined" error display by handling Event objects in catch (onerror returns Event, not Error). Camera: added more diagnostics for "denied" case.</div>
-                <div class="changelog-item"><strong>v1.5.0</strong> — Camera: fixed 'Requested device not found' fallback. Upload: fixed scanFile() to use correct 3-arg signature.</div>
+                <div class="changelog-item"><strong>v1.7.0</strong> — Camera: back camera as default, Html5QrcodeSupportedFormats (not ScannerFormat). Upload: fixed Event error handler.</div>
+                <div class="changelog-item"><strong>v1.6.0</strong> — Upload: fixed "undefined" error display by handling Event objects in catch.</div>
                 <div class="changelog-item"><strong>v1.4.0</strong> — B&amp;W mode (grayscale + high contrast); better dedup (5s cooldown); version &amp; changelog footer.</div>
                 <div class="changelog-item"><strong>v1.3.0</strong> — Shape selector (Square/Tall/Wide/Barcode) + manual focus slider.</div>
                 <div class="changelog-item"><strong>v1.2.0</strong> — Camera/upload tabs, history with export/clear, cooldown 3s dedup.</div>
@@ -281,10 +281,22 @@
             try {
                 html5QrCode = new Html5Qrcode("reader");
 
-                // Filter cameras with valid non-empty ids
-                const validCams = cameras.filter(c => c.deviceId && c.deviceId.trim() !== '');
-                const cam = validCams.length > 0 ? validCams[0] : cameras[0];
+                // Pick back/environment camera if available, otherwise first camera
+                const backPatterns = ['back', 'rear', 'environment', 'เลนส์หลัง', 'หลัง'];
+                const frontPatterns = ['front', 'user', 'เลนส์หน้า', 'หน้า'];
+                
+                let cam = cameras[0]; // fallback
+                for (const c of cameras) {
+                    const label = (c.label || '').toLowerCase();
+                    if (backPatterns.some(p => label.includes(p))) {
+                        cam = c;
+                        break;
+                    }
+                }
+                
                 const camLabel = cam.label || 'Camera ' + cam.deviceId.substring(0, 8);
+                const isBack = backPatterns.some(p => (cam.label || '').toLowerCase().includes(p));
+                setStatus('Camera: ' + camLabel + (isBack ? ' (back)' : ' (auto)'), 'success');
 
                 const onScanSuccess = (decodedText, decodedResult) => {
                     const now = Date.now();
