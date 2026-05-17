@@ -14,6 +14,7 @@
         .container { max-width: 600px; margin: 0 auto; }
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         h1 { font-size: 18px; font-weight: 600; }
+        .version-badge { font-size: 10px; background: #f0f0f0; padding: 3px 8px; border-radius: 3px; color: #666; margin-left: 8px; }
         .btn { background: #fff; border: 1px solid #111; padding: 7px 14px; font-family: inherit; font-size: 12px; cursor: pointer; }
         .btn:hover { background: #f0f0f0; }
         .controls { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; padding: 12px; border: 1px solid #111; }
@@ -23,20 +24,40 @@
         .shape-btn { padding: 6px 12px; border: 1px solid #111; font-family: inherit; font-size: 11px; cursor: pointer; background: #fff; }
         .shape-btn.active { background: #111; color: #fff; }
         .shape-btn:not(.active):hover { background: #f0f0f0; }
-        .focus-slider { flex: 1; height: 4px; -webkit-appearance: none; appearance: none; background: #ccc; outline: none; cursor: pointer; }
-        .focus-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #111; cursor: pointer; }
-        .focus-label { font-size: 11px; color: #666; min-width: 30px; text-align: right; }
+        .bw-toggle { display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; }
+        .bw-toggle input { cursor: pointer; }
         .tabs { display: flex; gap: 0; margin-bottom: 16px; }
         .tab { flex: 1; padding: 10px; text-align: center; border: 1px solid #111; cursor: pointer; font-size: 12px; }
         .tab.active { background: #111; color: #fff; }
         .tab:not(.active) { background: #fff; }
-        .scanner-section { border: 1px solid #111; padding: 14px; margin-bottom: 14px; }
-        #reader { width: 100%; }
+        .scanner-section { border: 1px solid #111; padding: 14px; margin-bottom: 14px; position: relative; }
+        #reader { width: 100%; position: relative; }
         #reader video { width: 100% !important; border-radius: 0; object-fit: contain; }
+        /* B&W filter applied to video feed */
+        #reader video.bw-filter { filter: grayscale(100%) contrast(130%) brightness(105%); }
         #qr-shrink-fit { width: 100% !important; }
         #qr-shrink-fit video { width: 100% !important; object-fit: contain; }
+        /* Scan line animation */
+        #reader::before {
+            content: '';
+            position: absolute;
+            left: 0; right: 0;
+            height: 2px;
+            background: rgba(255,0,0,0.7);
+            z-index: 10;
+            pointer-events: none;
+            animation: scanline 2s linear infinite;
+            display: none;
+        }
+        #reader.scanning::before { display: block; }
+        @keyframes scanline {
+            0% { top: 10%; }
+            50% { top: 90%; }
+            100% { top: 10%; }
+        }
         .result-box { background: #f5f5f5; padding: 10px; margin-top: 10px; font-size: 13px; word-break: break-all; }
         .result-box.success { background: #d4edda; }
+        .result-box.duplicate { background: #fff3cd; }
         .upload-section { display: none; }
         .upload-section.active { display: block; }
         .file-input { width: 100%; padding: 10px; border: 1px solid #111; font-family: inherit; font-size: 12px; }
@@ -54,12 +75,24 @@
         .history-item .delete-btn:hover { color: #111; }
         .empty-state { padding: 28px; text-align: center; color: #aaa; font-size: 12px; }
         .hidden { display: none; }
+
+        /* Footer */
+        .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #ddd; }
+        .changelog-toggle { font-size: 11px; color: #888; cursor: pointer; display: flex; align-items: center; gap: 6px; user-select: none; }
+        .changelog-toggle:hover { color: #111; }
+        .changelog { display: none; margin-top: 10px; font-size: 11px; color: #555; line-height: 1.6; }
+        .changelog.visible { display: block; }
+        .changelog-item { margin-bottom: 8px; padding-left: 8px; border-left: 2px solid #ddd; }
+        .changelog-item strong { color: #111; }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Barcode Scanner</h1>
+            <div style="display:flex;align-items:center">
+                <h1>Barcode Scanner</h1>
+                <span class="version-badge" id="versionBadge">v1.4.0</span>
+            </div>
             <button class="btn" id="exportBtn">Export TXT</button>
         </header>
 
@@ -75,9 +108,11 @@
                 </div>
             </div>
             <div class="control-row">
-                <label>Focus</label>
-                <input type="range" class="focus-slider" id="focusSlider" min="0" max="100" value="50" oninput="updateFocus(this.value)">
-                <span class="focus-label" id="focusLabel">50</span>
+                <label>B&amp;W Mode</label>
+                <label class="bw-toggle">
+                    <input type="checkbox" id="bwToggle" checked onchange="toggleBW(this.checked)">
+                    <span>Grayscale + High Contrast (recommended)</span>
+                </label>
             </div>
         </div>
 
@@ -106,22 +141,40 @@
                 <div class="empty-state">No scanned items yet</div>
             </div>
         </div>
+
+        <!-- Footer: Changelog -->
+        <div class="footer">
+            <div class="changelog-toggle" onclick="document.getElementById('changelog').classList.toggle('visible')">
+                ▼ <span id="changelogLabel">Changelog v1.4.0</span>
+            </div>
+            <div class="changelog" id="changelog">
+                <div class="changelog-item"><strong>v1.4.0</strong> — B&amp;W mode (grayscale + high contrast) to fix focus issues; better dedup (5s cooldown, exact match only); version &amp; changelog footer added.</div>
+                <div class="changelog-item"><strong>v1.3.0</strong> — Shape selector (Square/Tall/Wide/Barcode) + manual focus slider added.</div>
+                <div class="changelog-item"><strong>v1.2.0</strong> — Camera/upload tabs, history with export/clear, cooldown 3s dedup.</div>
+                <div class="changelog-item"><strong>v1.1.0</strong> — Multi-format support (Code128, EAN, UPC, ITF, QR).</div>
+                <div class="changelog-item"><strong>v1.0.0</strong> — Initial release.</div>
+            </div>
+        </div>
     </div>
 
     <script>
+        const VERSION = '1.4.0';
         const STORAGE_KEY = 'barcode_history';
-        const SCAN_COOLDOWN_MS = 3000;
+        const SCAN_COOLDOWN_MS = 5000; // 5 sec cooldown for duplicates
         let html5QrCode;
         let cameraActive = false;
-        let lastScanned = { value: '', timestamp: 0 };
+        let lastScannedValue = '';
+        let lastScannedTime = 0;
         let currentShape = 'square';
+        let bwEnabled = true;
+        let restarting = false;
 
         // Shape presets (width x height)
         const SHAPES = {
-            square:  { width: 220, height: 220 },
-            tall:     { width: 180, height: 280 },
-            wide:    { width: 320, height: 180 },
-            barcode: { width: 360, height: 80 }
+            square:  { width: 220, height: 220, aspectRatio: 1.0 },
+            tall:    { width: 180, height: 280, aspectRatio: 0.65 },
+            wide:    { width: 320, height: 180, aspectRatio: 1.8 },
+            barcode: { width: 360, height: 80,  aspectRatio: 4.5 }
         };
 
         // Tab switching
@@ -143,35 +196,124 @@
 
         // Shape selector
         function setShape(shape) {
+            if (shape === currentShape) return;
             currentShape = shape;
             document.querySelectorAll('.shape-btn').forEach(b => {
                 b.classList.toggle('active', b.dataset.shape === shape);
             });
-            if (cameraActive && html5QrCode) {
-                // Restart with new shape
+            if (cameraActive) {
                 restartCamera();
             }
         }
 
-        // Focus control — apply via JS to video track
-        function updateFocus(val) {
-            document.getElementById('focusLabel').textContent = val;
-            if (html5QrCode && cameraActive) {
-                const track = html5QrCode.getRunningTrackSettings();
-                if (track && 'focusMode' in track) {
-                    // Try continuous focus first, then manual if supported
-                    try {
-                        html5QrCode.applyVideoConstraints({
-                            advanced: [{ focusMode: 'continuous' }]
-                        });
-                    } catch(e) {}
+        // B&W toggle
+        function toggleBW(enabled) {
+            bwEnabled = enabled;
+            const videos = document.querySelectorAll('#reader video');
+            videos.forEach(v => v.classList.toggle('bw-filter', enabled));
+            const reader = document.getElementById('reader');
+            reader.classList.toggle('scanning', enabled);
+        }
+
+        // Build scan config
+        function getScanConfig() {
+            const shape = SHAPES[currentShape];
+            return {
+                fps: 4,
+                qrbox: { width: shape.width, height: shape.height },
+                aspectRatio: shape.aspectRatio,
+                formatsToSupport: [
+                    Html5QrcodeScannerFormat.CODE_128,
+                    Html5QrcodeScannerFormat.CODE_39,
+                    Html5QrcodeScannerFormat.CODE_93,
+                    Html5QrcodeScannerFormat.CODABAR,
+                    Html5QrcodeScannerFormat.EAN_13,
+                    Html5QrcodeScannerFormat.EAN_8,
+                    Html5QrcodeScannerFormat.UPC_A,
+                    Html5QrcodeScannerFormat.UPC_E,
+                    Html5QrcodeScannerFormat.ITF,
+                    Html5QrcodeScannerFormat.QR_CODE
+                ]
+            };
+        }
+
+        async function startCamera() {
+            if (cameraActive || restarting) return;
+            try {
+                html5QrCode = new Html5Qrcode("reader");
+
+                const cameras = await Html5Qrcode.getCameras();
+                let cameraId = null;
+                if (cameras && cameras.length > 0) {
+                    const back = cameras.find(c => c.label.toLowerCase().includes('back') || c.label.toLowerCase().includes('rear'));
+                    cameraId = back ? back.id : cameras[0].id;
                 }
-                // Apply manual focus distance (0.0 - 1.0)
+
+                const onScanSuccess = (decodedText, decodedResult) => {
+                    const now = Date.now();
+                    // Strict dedup: exact same value AND within cooldown window
+                    const isDuplicate = (decodedText === lastScannedValue) && (now - lastScannedTime < SCAN_COOLDOWN_MS);
+                    if (isDuplicate) {
+                        // Show brief "already scanned" feedback
+                        const el = document.getElementById('cameraResult');
+                        el.textContent = '↺ Already scanned';
+                        el.classList.remove('hidden');
+                        el.classList.remove('success');
+                        el.classList.add('duplicate');
+                        setTimeout(() => {
+                            if (el.textContent === '↺ Already scanned') el.classList.add('hidden');
+                        }, 1500);
+                        return;
+                    }
+                    lastScannedValue = decodedText;
+                    lastScannedTime = now;
+                    showResult('cameraResult', decodedText, decodedResult.result.format.formatName, true);
+                    addToHistory(decodedText, decodedResult.result.format.formatName);
+                };
+
+                const config = getScanConfig();
+                const constraints = {
+                    facingMode: "environment",
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                };
+                const useDeviceId = cameraId ? { deviceId: { exact: cameraId } } : constraints;
+
+                await html5QrCode.start(useDeviceId, config, onScanSuccess, () => {});
+
+                // Apply B&W filter
+                toggleBW(bwEnabled);
+
+                cameraActive = true;
+            } catch (err) {
+                console.error('Camera error:', err);
+                document.getElementById('cameraResult').textContent = 'Camera error: ' + err.message;
+                document.getElementById('cameraResult').classList.remove('hidden');
+            }
+        }
+
+        async function restartCamera() {
+            if (restarting) return;
+            restarting = true;
+            const reader = document.getElementById('reader');
+            reader.classList.remove('scanning');
+            stopCamera();
+            // Wait for camera to fully stop
+            await new Promise(r => setTimeout(r, 800));
+            // Clear the reader div
+            const readerEl = document.getElementById('reader');
+            readerEl.innerHTML = '';
+            await startCamera();
+            restarting = false;
+        }
+
+        function stopCamera() {
+            if (html5QrCode) {
                 try {
-                    html5QrCode.applyVideoConstraints({
-                        advanced: [{ focusDistance: parseInt(val) / 100 }]
-                    });
-                } catch(e) {}
+                    html5QrCode.stop().then(() => {
+                        cameraActive = false;
+                    }).catch(() => { cameraActive = false; });
+                } catch(e) { cameraActive = false; }
             }
         }
 
@@ -187,7 +329,10 @@
 
         function addToHistory(value, type) {
             const history = getHistory();
+            // Also dedup in history
+            if (history.length > 0 && history[0].value === value) return;
             history.unshift({ value, type, time: new Date().toLocaleString() });
+            if (history.length > 200) history = history.slice(0, 200);
             saveHistory(history);
             renderHistory();
         }
@@ -236,90 +381,11 @@
             const blob = new Blob([content], { type: 'text/plain' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = 'barcode_history.txt';
+            a.download = `barcode_history_${new Date().toISOString().slice(0,10)}.txt`;
             a.click();
         });
 
         document.getElementById('clearAllBtn').addEventListener('click', clearAll);
-
-        // Build scan config
-        function getScanConfig() {
-            const shape = SHAPES[currentShape];
-            return {
-                fps: 4,
-                qrbox: { width: shape.width, height: shape.height },
-                aspectRatio: currentShape === 'tall' ? 0.6 : (currentShape === 'wide' ? 1.8 : 1.0),
-                formatsToSupport: [
-                    Html5QrcodeScannerFormat.CODE_128,
-                    Html5QrcodeScannerFormat.CODE_39,
-                    Html5QrcodeScannerFormat.CODE_93,
-                    Html5QrcodeScannerFormat.CODABAR,
-                    Html5QrcodeScannerFormat.EAN_13,
-                    Html5QrcodeScannerFormat.EAN_8,
-                    Html5QrcodeScannerFormat.UPC_A,
-                    Html5QrcodeScannerFormat.UPC_E,
-                    Html5QrcodeScannerFormat.ITF,
-                    Html5QrcodeScannerFormat.QR_CODE
-                ]
-            };
-        }
-
-        async function startCamera() {
-            if (cameraActive) return;
-            try {
-                html5QrCode = new Html5Qrcode("reader");
-
-                const cameras = await Html5Qrcode.getCameras();
-                let cameraId = null;
-                if (cameras && cameras.length > 0) {
-                    const back = cameras.find(c => c.label.toLowerCase().includes('back') || c.label.toLowerCase().includes('rear'));
-                    cameraId = back ? back.id : cameras[0].id;
-                }
-
-                const onScanSuccess = (decodedText, decodedResult) => {
-                    const now = Date.now();
-                    const isDuplicate = (decodedText === lastScanned.value) && (now - lastScanned.timestamp < SCAN_COOLDOWN_MS);
-                    if (isDuplicate) return;
-                    lastScanned = { value: decodedText, timestamp: now };
-                    showResult('cameraResult', decodedText, decodedResult.result.format.formatName, true);
-                    addToHistory(decodedText, decodedResult.result.format.formatName);
-                };
-
-                const config = getScanConfig();
-                const constraints = {
-                    facingMode: "environment",
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                };
-
-                const useDeviceId = cameraId ? { deviceId: { exact: cameraId } } : constraints;
-
-                await html5QrCode.start(useDeviceId, config, onScanSuccess, () => {});
-
-                // Apply focus after camera starts
-                setTimeout(() => {
-                    const val = parseInt(document.getElementById('focusSlider').value);
-                    updateFocus(val);
-                }, 1000);
-
-                cameraActive = true;
-            } catch (err) {
-                console.error('Camera error:', err);
-                document.getElementById('cameraResult').textContent = 'Camera error: ' + err.message;
-            }
-        }
-
-        async function restartCamera() {
-            stopCamera();
-            await new Promise(r => setTimeout(r, 500));
-            await startCamera();
-        }
-
-        function stopCamera() {
-            if (html5QrCode && cameraActive) {
-                html5QrCode.stop().then(() => { cameraActive = false; }).catch(() => {});
-            }
-        }
 
         // Image upload scanner
         const fileInput = document.getElementById('fileInput');
@@ -332,6 +398,12 @@
             reader.onload = async (e) => {
                 preview.src = e.target.result;
                 preview.style.display = 'block';
+                // Apply B&W filter to uploaded image too
+                if (bwEnabled) {
+                    preview.style.filter = 'grayscale(100%) contrast(130%) brightness(105%)';
+                } else {
+                    preview.style.filter = '';
+                }
                 try {
                     const shape = SHAPES[currentShape];
                     const scanner = new Html5Qrcode("upload-preview");
@@ -361,6 +433,7 @@
                     el.textContent = 'No barcode found — try clearer image';
                     el.classList.remove('hidden');
                     el.classList.remove('success');
+                    el.classList.remove('duplicate');
                 }
             };
             reader.readAsDataURL(file);
@@ -370,10 +443,13 @@
             const el = document.getElementById(elementId);
             el.textContent = success ? `✓ ${text} (${type})` : `${text} (${type})`;
             el.classList.remove('hidden');
+            el.classList.remove('duplicate');
             el.classList.toggle('success', !!success);
         }
 
         // Init
+        document.getElementById('versionBadge').textContent = `v${VERSION}`;
+        document.getElementById('changelogLabel').textContent = `Changelog v${VERSION}`;
         renderHistory();
         startCamera();
     </script>
