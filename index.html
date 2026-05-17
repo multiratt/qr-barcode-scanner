@@ -10,37 +10,49 @@
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'JetBrains Mono', monospace; background: #fff; color: #111; min-height: 100vh; padding: 24px; }
+        body { font-family: 'JetBrains Mono', monospace; background: #fff; color: #111; min-height: 100vh; padding: 20px; }
         .container { max-width: 600px; margin: 0 auto; }
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-        h1 { font-size: 20px; font-weight: 600; }
-        .btn { background: #fff; border: 1px solid #111; padding: 8px 16px; font-family: inherit; font-size: 12px; cursor: pointer; }
-        .btn:hover { background: #f5f5f5; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        h1 { font-size: 18px; font-weight: 600; }
+        .btn { background: #fff; border: 1px solid #111; padding: 7px 14px; font-family: inherit; font-size: 12px; cursor: pointer; }
+        .btn:hover { background: #f0f0f0; }
+        .controls { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; padding: 12px; border: 1px solid #111; }
+        .control-row { display: flex; align-items: center; gap: 12px; }
+        .control-row label { font-size: 12px; min-width: 80px; }
+        .shape-btns { display: flex; gap: 0; }
+        .shape-btn { padding: 6px 12px; border: 1px solid #111; font-family: inherit; font-size: 11px; cursor: pointer; background: #fff; }
+        .shape-btn.active { background: #111; color: #fff; }
+        .shape-btn:not(.active):hover { background: #f0f0f0; }
+        .focus-slider { flex: 1; height: 4px; -webkit-appearance: none; appearance: none; background: #ccc; outline: none; cursor: pointer; }
+        .focus-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #111; cursor: pointer; }
+        .focus-label { font-size: 11px; color: #666; min-width: 30px; text-align: right; }
         .tabs { display: flex; gap: 0; margin-bottom: 16px; }
-        .tab { flex: 1; padding: 12px; text-align: center; border: 1px solid #111; cursor: pointer; font-size: 13px; }
+        .tab { flex: 1; padding: 10px; text-align: center; border: 1px solid #111; cursor: pointer; font-size: 12px; }
         .tab.active { background: #111; color: #fff; }
         .tab:not(.active) { background: #fff; }
-        .scanner-section { border: 1px solid #111; padding: 16px; margin-bottom: 16px; }
+        .scanner-section { border: 1px solid #111; padding: 14px; margin-bottom: 14px; }
         #reader { width: 100%; }
         #reader video { width: 100% !important; border-radius: 0; object-fit: contain; }
-        .result-box { background: #f5f5f5; padding: 12px; margin-top: 12px; font-size: 14px; word-break: break-all; }
+        #qr-shrink-fit { width: 100% !important; }
+        #qr-shrink-fit video { width: 100% !important; object-fit: contain; }
+        .result-box { background: #f5f5f5; padding: 10px; margin-top: 10px; font-size: 13px; word-break: break-all; }
         .result-box.success { background: #d4edda; }
         .upload-section { display: none; }
         .upload-section.active { display: block; }
-        .file-input { width: 100%; padding: 12px; border: 1px solid #111; font-family: inherit; font-size: 13px; }
-        #upload-preview { max-width: 100%; margin-top: 12px; display: none; }
-        .history-section { margin-top: 24px; }
-        .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .history-header h2 { font-size: 14px; font-weight: 600; }
-        .history-list { border: 1px solid #111; max-height: 300px; overflow-y: auto; }
-        .history-item { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: flex-start; }
+        .file-input { width: 100%; padding: 10px; border: 1px solid #111; font-family: inherit; font-size: 12px; }
+        #upload-preview { max-width: 100%; margin-top: 10px; display: none; }
+        .history-section { margin-top: 20px; }
+        .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .history-header h2 { font-size: 13px; font-weight: 600; }
+        .history-list { border: 1px solid #111; max-height: 280px; overflow-y: auto; }
+        .history-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: flex-start; }
         .history-item:last-child { border-bottom: none; }
         .history-item .info { flex: 1; }
-        .history-item .value { font-size: 13px; font-weight: 600; word-break: break-all; }
-        .history-item .meta { font-size: 11px; color: #666; margin-top: 4px; }
-        .history-item .delete-btn { background: none; border: none; cursor: pointer; font-size: 16px; padding: 4px; color: #999; }
+        .history-item .value { font-size: 12px; font-weight: 600; word-break: break-all; }
+        .history-item .meta { font-size: 10px; color: #666; margin-top: 3px; }
+        .history-item .delete-btn { background: none; border: none; cursor: pointer; font-size: 15px; padding: 3px; color: #aaa; }
         .history-item .delete-btn:hover { color: #111; }
-        .empty-state { padding: 32px; text-align: center; color: #999; font-size: 13px; }
+        .empty-state { padding: 28px; text-align: center; color: #aaa; font-size: 12px; }
         .hidden { display: none; }
     </style>
 </head>
@@ -51,9 +63,27 @@
             <button class="btn" id="exportBtn">Export TXT</button>
         </header>
 
+        <!-- Controls -->
+        <div class="controls">
+            <div class="control-row">
+                <label>Shape</label>
+                <div class="shape-btns">
+                    <button class="shape-btn active" data-shape="square" onclick="setShape('square')">■ Square</button>
+                    <button class="shape-btn" data-shape="tall" onclick="setShape('tall')">▬ Tall</button>
+                    <button class="shape-btn" data-shape="wide" onclick="setShape('wide')">▬▬ Wide</button>
+                    <button class="shape-btn" data-shape="barcode" onclick="setShape('barcode')">═ Barcode</button>
+                </div>
+            </div>
+            <div class="control-row">
+                <label>Focus</label>
+                <input type="range" class="focus-slider" id="focusSlider" min="0" max="100" value="50" oninput="updateFocus(this.value)">
+                <span class="focus-label" id="focusLabel">50</span>
+            </div>
+        </div>
+
         <div class="tabs">
-            <div class="tab active" data-tab="camera">Camera</div>
-            <div class="tab" data-tab="upload">Upload</div>
+            <div class="tab active" data-tab="camera">📷 Camera</div>
+            <div class="tab" data-tab="upload">🖼️ Upload</div>
         </div>
 
         <div class="scanner-section camera-section active">
@@ -80,13 +110,19 @@
 
     <script>
         const STORAGE_KEY = 'barcode_history';
-        const SCAN_COOLDOWN_MS = 3000; // 3 sec cooldown before same code can be scanned again
-        const DIFFERENT_CODE_COOLDOWN_MS = 1500; // 1.5 sec between different codes
+        const SCAN_COOLDOWN_MS = 3000;
         let html5QrCode;
         let cameraActive = false;
-
-        // Deduplication state
         let lastScanned = { value: '', timestamp: 0 };
+        let currentShape = 'square';
+
+        // Shape presets (width x height)
+        const SHAPES = {
+            square:  { width: 220, height: 220 },
+            tall:     { width: 180, height: 280 },
+            wide:    { width: 320, height: 180 },
+            barcode: { width: 360, height: 80 }
+        };
 
         // Tab switching
         document.querySelectorAll('.tab').forEach(tab => {
@@ -105,11 +141,44 @@
             });
         });
 
+        // Shape selector
+        function setShape(shape) {
+            currentShape = shape;
+            document.querySelectorAll('.shape-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.shape === shape);
+            });
+            if (cameraActive && html5QrCode) {
+                // Restart with new shape
+                restartCamera();
+            }
+        }
+
+        // Focus control — apply via JS to video track
+        function updateFocus(val) {
+            document.getElementById('focusLabel').textContent = val;
+            if (html5QrCode && cameraActive) {
+                const track = html5QrCode.getRunningTrackSettings();
+                if (track && 'focusMode' in track) {
+                    // Try continuous focus first, then manual if supported
+                    try {
+                        html5QrCode.applyVideoConstraints({
+                            advanced: [{ focusMode: 'continuous' }]
+                        });
+                    } catch(e) {}
+                }
+                // Apply manual focus distance (0.0 - 1.0)
+                try {
+                    html5QrCode.applyVideoConstraints({
+                        advanced: [{ focusDistance: parseInt(val) / 100 }]
+                    });
+                } catch(e) {}
+            }
+        }
+
         // Load history
         function getHistory() {
-            try {
-                return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-            } catch { return []; }
+            try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+            catch { return []; }
         }
 
         function saveHistory(history) {
@@ -165,79 +234,85 @@
             if (history.length === 0) { alert('No items to export'); return; }
             const content = history.map(h => `${h.value} | ${h.type} | ${h.time}`).join('\n');
             const blob = new Blob([content], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url;
+            a.href = URL.createObjectURL(blob);
             a.download = 'barcode_history.txt';
             a.click();
-            URL.revokeObjectURL(url);
         });
 
         document.getElementById('clearAllBtn').addEventListener('click', clearAll);
 
-        // Camera scanner
+        // Build scan config
+        function getScanConfig() {
+            const shape = SHAPES[currentShape];
+            return {
+                fps: 4,
+                qrbox: { width: shape.width, height: shape.height },
+                aspectRatio: currentShape === 'tall' ? 0.6 : (currentShape === 'wide' ? 1.8 : 1.0),
+                formatsToSupport: [
+                    Html5QrcodeScannerFormat.CODE_128,
+                    Html5QrcodeScannerFormat.CODE_39,
+                    Html5QrcodeScannerFormat.CODE_93,
+                    Html5QrcodeScannerFormat.CODABAR,
+                    Html5QrcodeScannerFormat.EAN_13,
+                    Html5QrcodeScannerFormat.EAN_8,
+                    Html5QrcodeScannerFormat.UPC_A,
+                    Html5QrcodeScannerFormat.UPC_E,
+                    Html5QrcodeScannerFormat.ITF,
+                    Html5QrcodeScannerFormat.QR_CODE
+                ]
+            };
+        }
+
         async function startCamera() {
             if (cameraActive) return;
             try {
                 html5QrCode = new Html5Qrcode("reader");
 
-                // Try to get available cameras first
                 const cameras = await Html5Qrcode.getCameras();
                 let cameraId = null;
                 if (cameras && cameras.length > 0) {
-                    // Prefer back camera
                     const back = cameras.find(c => c.label.toLowerCase().includes('back') || c.label.toLowerCase().includes('rear'));
                     cameraId = back ? back.id : cameras[0].id;
                 }
 
-                const config = {
-                    fps: 5, // Lower fps for better focus on small barcodes
-                    qrbox: { width: 280, height: 150 }, // Wider/shorter box for barcode scanning
-                    aspectRatio: 1.5, // Taller preview helps with focusing
-                    formatsToSupport: [
-                        Html5QrcodeScannerFormat.CODE_128,
-                        Html5QrcodeScannerFormat.CODE_39,
-                        Html5QrcodeScannerFormat.CODE_93,
-                        Html5QrcodeScannerFormat.CODABAR,
-                        Html5QrcodeScannerFormat.EAN_13,
-                        Html5QrcodeScannerFormat.EAN_8,
-                        Html5QrcodeScannerFormat.UPC_A,
-                        Html5QrcodeScannerFormat.UPC_E,
-                        Html5QrcodeScannerFormat.ITF,
-                        Html5QrcodeScannerFormat.QR_CODE
-                    ]
-                };
-
                 const onScanSuccess = (decodedText, decodedResult) => {
                     const now = Date.now();
-                    const isDuplicate = (decodedText === lastScanned.value) &&
-                        (now - lastScanned.timestamp < SCAN_COOLDOWN_MS);
-
-                    if (isDuplicate) {
-                        // Same code scanned within cooldown — ignore silently
-                        return;
-                    }
-
+                    const isDuplicate = (decodedText === lastScanned.value) && (now - lastScanned.timestamp < SCAN_COOLDOWN_MS);
+                    if (isDuplicate) return;
                     lastScanned = { value: decodedText, timestamp: now };
                     showResult('cameraResult', decodedText, decodedResult.result.format.formatName, true);
                     addToHistory(decodedText, decodedResult.result.format.formatName);
                 };
 
-                const configToUse = cameraId
-                    ? { ...config, deviceId: { exact: cameraId } }
-                    : config;
+                const config = getScanConfig();
+                const constraints = {
+                    facingMode: "environment",
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                };
 
-                await html5QrCode.start(
-                    cameraId ? { deviceId: { exact: cameraId } } : { facingMode: "environment" },
-                    config,
-                    onScanSuccess,
-                    () => {} // Ignore scan failures (normal when no code visible)
-                );
+                const useDeviceId = cameraId ? { deviceId: { exact: cameraId } } : constraints;
+
+                await html5QrCode.start(useDeviceId, config, onScanSuccess, () => {});
+
+                // Apply focus after camera starts
+                setTimeout(() => {
+                    const val = parseInt(document.getElementById('focusSlider').value);
+                    updateFocus(val);
+                }, 1000);
+
                 cameraActive = true;
             } catch (err) {
                 console.error('Camera error:', err);
-                document.getElementById('cameraResult').textContent = 'Camera not available: ' + err.message;
+                document.getElementById('cameraResult').textContent = 'Camera error: ' + err.message;
             }
+        }
+
+        async function restartCamera() {
+            stopCamera();
+            await new Promise(r => setTimeout(r, 500));
+            await startCamera();
         }
 
         function stopCamera() {
@@ -249,22 +324,20 @@
         // Image upload scanner
         const fileInput = document.getElementById('fileInput');
         const preview = document.getElementById('upload-preview');
-        const uploadResult = document.getElementById('uploadResult');
 
         fileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = async (e) => {
                 preview.src = e.target.result;
                 preview.style.display = 'block';
-
                 try {
-                    const result = await Html5Qrcode.scanFile(file, false, {
-                        fps: 5,
-                        qrbox: { width: 280, height: 150 },
-                        aspectRatio: 1.5,
+                    const shape = SHAPES[currentShape];
+                    const scanner = new Html5Qrcode("upload-preview");
+                    const result = await scanner.scanFile(file, false, {
+                        fps: 4,
+                        qrbox: { width: shape.width, height: shape.height },
                         supportedFormats: [
                             Html5QrcodeScannerFormat.CODE_128,
                             Html5QrcodeScannerFormat.CODE_39,
@@ -284,9 +357,10 @@
                         addToHistory(r.text, r.format);
                     }
                 } catch (err) {
-                    uploadResult.textContent = 'No barcode found — try a clearer image';
-                    uploadResult.classList.remove('hidden');
-                    uploadResult.classList.remove('success');
+                    const el = document.getElementById('uploadResult');
+                    el.textContent = 'No barcode found — try clearer image';
+                    el.classList.remove('hidden');
+                    el.classList.remove('success');
                 }
             };
             reader.readAsDataURL(file);
