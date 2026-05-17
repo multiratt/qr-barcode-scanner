@@ -34,7 +34,6 @@
         #reader { width: 100%; position: relative; }
         #reader video { width: 100% !important; border-radius: 0; object-fit: contain; }
         #reader video.bw-filter { filter: grayscale(100%) contrast(130%) brightness(105%); }
-        /* Scan line animation */
         #reader::before {
             content: '';
             position: absolute;
@@ -62,7 +61,9 @@
         .file-input { width: 100%; padding: 10px; border: 1px solid #111; font-family: inherit; font-size: 12px; }
         #upload-preview { max-width: 100%; margin-top: 10px; display: none; }
         #upload-preview.bw-filter { filter: grayscale(100%) contrast(130%) brightness(105%); }
-        .camera-status { font-size: 11px; color: #888; margin-top: 8px; }
+        .camera-status { font-size: 11px; color: #888; margin-top: 8px; min-height: 16px; }
+        .camera-status.error { color: #c00; }
+        .camera-status.success { color: #060; }
         .history-section { margin-top: 20px; }
         .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .history-header h2 { font-size: 13px; font-weight: 600; }
@@ -92,7 +93,7 @@
         <header>
             <div style="display:flex;align-items:center">
                 <h1>Barcode Scanner</h1>
-                <span class="version-badge" id="versionBadge">v1.5.0</span>
+                <span class="version-badge" id="versionBadge">v1.6.0</span>
             </div>
             <button class="btn" id="exportBtn">Export TXT</button>
         </header>
@@ -147,10 +148,11 @@
         <!-- Footer: Changelog -->
         <div class="footer">
             <div class="changelog-toggle" onclick="document.getElementById('changelog').classList.toggle('visible')">
-                ▼ <span id="changelogLabel">Changelog v1.5.0</span>
+                ▼ <span id="changelogLabel">Changelog v1.6.0</span>
             </div>
             <div class="changelog" id="changelog">
-                <div class="changelog-item"><strong>v1.5.0</strong> — Camera: fixed 'Requested device not found' by using any/front camera fallback. Upload: fixed scanFile() to use correct 3-arg signature (qrbox dimensions as object, not config). Add camera status indicator.</div>
+                <div class="changelog-item"><strong>v1.6.0</strong> — Upload: fixed "undefined" error display by handling Event objects in catch (onerror returns Event, not Error). Camera: added more diagnostics for "denied" case.</div>
+                <div class="changelog-item"><strong>v1.5.0</strong> — Camera: fixed 'Requested device not found' fallback. Upload: fixed scanFile() to use correct 3-arg signature.</div>
                 <div class="changelog-item"><strong>v1.4.0</strong> — B&amp;W mode (grayscale + high contrast); better dedup (5s cooldown); version &amp; changelog footer.</div>
                 <div class="changelog-item"><strong>v1.3.0</strong> — Shape selector (Square/Tall/Wide/Barcode) + manual focus slider.</div>
                 <div class="changelog-item"><strong>v1.2.0</strong> — Camera/upload tabs, history with export/clear, cooldown 3s dedup.</div>
@@ -161,7 +163,7 @@
     </div>
 
     <script>
-        const VERSION = '1.5.0';
+        const VERSION = '1.6.0';
         const STORAGE_KEY = 'barcode_history';
         const SCAN_COOLDOWN_MS = 5000;
         let html5QrCode;
@@ -214,8 +216,25 @@
             else up.classList.remove('bw-filter');
         }
 
-        function setStatus(msg) {
-            document.getElementById('cameraStatus').textContent = msg;
+        function setStatus(msg, type) {
+            const el = document.getElementById('cameraStatus');
+            el.textContent = msg;
+            el.className = 'camera-status' + (type ? ' ' + type : '');
+        }
+
+        // Normalize error from various sources (string, Error, Event, etc.)
+        function normalizeError(e) {
+            if (typeof e === 'string') return e;
+            if (typeof e === 'undefined') return 'Unknown error (undefined)';
+            if (e === null) return 'Unknown error (null)';
+            // Event objects (onerror, onabort, etc.)
+            if (e instanceof Event || typeof e.type === 'string') {
+                return 'Image load failed: ' + (e.type || 'unknown Event');
+            }
+            // Standard Error
+            if (e.message) return e.message;
+            // Fallback
+            return String(e);
         }
 
         function getScanConfig() {
@@ -242,39 +261,30 @@
         async function startCamera() {
             if (cameraActive || restarting) return;
             setStatus('Requesting camera...');
+
+            // Step 1: Check enumerateDevices first
+            let cameras = [];
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                cameras = devices.filter(d => d.kind === 'videoinput');
+                setStatus('Detecting cameras (' + cameras.length + ' found)...');
+            } catch(e) {
+                setStatus('Cannot enumerate devices: ' + normalizeError(e), 'error');
+                return;
+            }
+
+            if (cameras.length === 0) {
+                setStatus('No camera detected on this device', 'error');
+                return;
+            }
+
             try {
                 html5QrCode = new Html5Qrcode("reader");
 
-                // Get camera list
-                let cameras = [];
-                try {
-                    cameras = await Html5Qrcode.getCameras();
-                } catch(e) {
-                    setStatus('Camera access denied or unavailable');
-                    return;
-                }
-
-                let cameraId = null;
-                if (cameras && cameras.length > 0) {
-                    // Find back/rear camera, fallback to first with non-empty id
-                    const valid = cameras.filter(c => c.id && c.id.trim() !== '');
-                    if (valid.length === 0) {
-                        // Use first camera even if id looks empty (some browsers report empty ids)
-                        cameraId = cameras[0].id;
-                        setStatus('Using camera (id available: ' + (cameraId ? 'yes' : 'no') + ')');
-                    } else {
-                        const back = valid.find(c =>
-                            c.label.toLowerCase().includes('back') ||
-                            c.label.toLowerCase().includes('rear') ||
-                            c.label.toLowerCase().includes('environment')
-                        );
-                        cameraId = back ? back.id : valid[0].id;
-                        setStatus('Found ' + cameras.length + ' camera(s): ' + valid.map(c => c.label || 'unnamed').join(', '));
-                    }
-                } else {
-                    setStatus('No cameras found on this device');
-                    return;
-                }
+                // Filter cameras with valid non-empty ids
+                const validCams = cameras.filter(c => c.deviceId && c.deviceId.trim() !== '');
+                const cam = validCams.length > 0 ? validCams[0] : cameras[0];
+                const camLabel = cam.label || 'Camera ' + cam.deviceId.substring(0, 8);
 
                 const onScanSuccess = (decodedText, decodedResult) => {
                     const now = Date.now();
@@ -298,35 +308,33 @@
 
                 const config = getScanConfig();
 
-                // Build constraints — use simple any-camera constraint first
-                // Only use exact deviceId if we have a non-empty string id
+                // Try deviceId first, then fallback to facingMode
                 let constraints;
-                if (cameraId && cameraId.trim() !== '') {
-                    constraints = { deviceId: { exact: cameraId } };
+                if (cam.deviceId && cam.deviceId.trim() !== '') {
+                    constraints = { deviceId: { exact: cam.deviceId } };
                 } else {
-                    // No valid deviceId — use facingMode instead
                     constraints = { facingMode: "environment" };
-                    setStatus('Using environment-facing camera');
                 }
 
                 await html5QrCode.start(constraints, config, onScanSuccess, () => {});
 
-                // Apply B&W filter after start
                 setTimeout(() => {
                     toggleBW(bwEnabled);
-                    setStatus('Camera active');
+                    setStatus('Camera active: ' + camLabel, 'success');
                 }, 500);
 
                 cameraActive = true;
             } catch (err) {
+                const msg = normalizeError(err);
                 console.error('Camera error:', err);
-                const msg = err.message || String(err);
-                if (msg.includes('NotFoundError') || msg.includes('Requested device not found')) {
-                    setStatus('Camera not found — try refreshing or check permissions');
-                } else if (msg.includes('NotAllowed') || msg.includes('Permission')) {
-                    setStatus('Camera permission denied — allow camera in browser settings');
+                if (err && err.name === 'NotFoundError') {
+                    setStatus('Camera not found — make sure no other app is using it', 'error');
+                } else if (err && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError')) {
+                    setStatus('Camera permission denied — check browser settings', 'error');
+                } else if (err && err.name === 'NotReadableError') {
+                    setStatus('Camera in use by another app — close other camera apps', 'error');
                 } else {
-                    setStatus('Camera error: ' + msg);
+                    setStatus('Camera error: ' + msg, 'error');
                 }
             }
         }
@@ -418,22 +426,24 @@
         document.getElementById('clearAllBtn').addEventListener('click', clearAll);
 
         // --- File Upload Scanner ---
-        // IMPORTANT: html5-qrcode scanFile() signature is:
-        //   scanFile(file, showImageFallback, config_qrbox_dimension?)
-        // The 3rd arg for file scan is ONLY qrbox {width, height} as a plain object (NO fps, NO formats)
         const fileInput = document.getElementById('fileInput');
         const preview = document.getElementById('upload-preview');
-        let uploadScanner = null;
 
         fileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
 
-            // Reset preview
+            // Reset
             preview.src = '';
             preview.style.display = 'none';
             preview.classList.remove('bw-filter');
-            document.getElementById('uploadResult').classList.add('hidden');
+            const resultEl = document.getElementById('uploadResult');
+            resultEl.classList.add('hidden');
+            resultEl.className = 'result-box';
+
+            // Show loading
+            resultEl.textContent = 'Processing image...';
+            resultEl.classList.remove('hidden');
 
             const reader = new FileReader();
             reader.onload = async (e) => {
@@ -441,38 +451,54 @@
                 preview.style.display = 'block';
                 if (bwEnabled) preview.classList.add('bw-filter');
 
-                // Create new scanner instance for the img element
                 try {
                     const shape = SHAPES[currentShape];
-                    uploadScanner = new Html5Qrcode("upload-preview");
+                    const scanner = new Html5Qrcode("upload-preview");
 
                     // scanFile(file, showImageFallback=true, qrboxDimension?)
-                    // qrboxDimension must be { width: number, height: number } — NOT a full config object!
-                    // fps and formatsToSupport are NOT supported for file scanning in html5-qrcode@2.3.8
-                    const result = await uploadScanner.scanFile(file, true, {
+                    // qrboxDimension must be { width, height } — NOT full config
+                    const result = await scanner.scanFile(file, true, {
                         width: shape.width,
                         height: shape.height
                     });
 
-                    if (result && result.length > 0) {
-                        const r = result[0];
-                        showResult('uploadResult', r.text, r.format, true);
-                        addToHistory(r.text, r.format);
+                    // scanFile returns decodedText (string) directly
+                    // But html5-qrcode v2.3.8 returns decodedText string, not {text, format}
+                    // So we construct the result ourselves
+                    if (result) {
+                        showResult('uploadResult', result, 'scanned', true);
+                        addToHistory(result, 'upload');
                     }
                 } catch (err) {
+                    const errMsg = normalizeError(err);
                     const el = document.getElementById('uploadResult');
-                    const msg = err.message || String(err);
-                    if (msg.includes('No MultiFormat Readers')) {
-                        el.textContent = 'No barcode found — image may be too blurry or small';
-                    } else {
-                        el.textContent = 'Scan error: ' + msg;
+                    
+                    // Check for specific error patterns
+                    let displayMsg = errMsg;
+                    if (errMsg.includes('imageFile argument is mandatory')) {
+                        displayMsg = 'Could not read file — try a different image';
+                    } else if (errMsg.includes('No MultiFormat Readers') || 
+                               errMsg.includes('No MultiFormat')) {
+                        displayMsg = 'No barcode found — image may be blurry or barcode not in supported formats';
+                    } else if (errMsg.includes('Image load failed')) {
+                        displayMsg = 'Could not load image file — format not supported';
                     }
+                    
+                    el.textContent = displayMsg;
                     el.classList.remove('hidden');
                     el.classList.remove('success');
                     el.classList.remove('duplicate');
                     el.classList.add('error');
                 }
             };
+
+            reader.onerror = () => {
+                const el = document.getElementById('uploadResult');
+                el.textContent = 'Could not read file';
+                el.classList.remove('hidden');
+                el.classList.add('error');
+            };
+
             reader.readAsDataURL(file);
         });
 
