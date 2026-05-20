@@ -334,6 +334,8 @@ document.querySelectorAll('.tab').forEach(tab => {
     });
 });
 
+// Camera starts only after first user interaction (tab click)
+
 async function stopCamera(tab) {
     if (tab === 'scan' && scanReader) {
         try { scanReader.reset(); } catch(e) {}
@@ -703,7 +705,7 @@ document.getElementById('clearAllBtn').addEventListener('click', clearAll);
 document.getElementById('versionBadge').textContent = `v${VERSION}`;
 document.getElementById('changelogLabel').textContent = `Changelog v${VERSION}`;
 renderHistory();
-startScanCamera();
+// Camera starts on first tab click (mobile Safari requirement)
     </script>
 </body>
 </html>
