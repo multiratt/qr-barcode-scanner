@@ -24,7 +24,8 @@
         .tab:not(.active) { background: #fff; }
         .scanner-section { border: 1px solid #111; padding: 14px; margin-bottom: 14px; position: relative; display: none; }
         .scanner-section.active { display: block; }
-        .reader-box { width: 100%; aspect-ratio: 1 / 1; max-height: 320px; position: relative; background: #111; overflow: hidden; }
+        .reader-box { width: 100%; aspect-ratio: 1 / 1; max-height: 320px; position: relative; background: #111; overflow: hidden; display: none; }
+        .reader-box.visible { display: block; }
         .reader-box video { width: 100%; height: 100%; border-radius: 0; object-fit: cover; display: block; position: absolute; top: 0; left: 0; }
         .reader-box video.bw-filter { filter: grayscale(100%) contrast(130%) brightness(105%); }
         .corner-tl, .corner-tr, .corner-bl, .corner-br {
@@ -84,19 +85,13 @@
         .candidate span { font-size: 12px; font-weight: 600; }
         .use-btn { background: #111; color: #fff; border: none; padding: 4px 10px; font-size: 11px; cursor: pointer; font-family: inherit; }
         .use-btn:hover { background: #444; }
-        .loading-dots { display: inline-block; }
-        .loading-dots::after { content: ''; animation: dots 1.5s steps(4, end) infinite; }
-        @keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } 100% { content: ''; } }
         .start-camera-btn { width: 100%; padding: 14px; background: #111; color: #fff; border: none; font-family: inherit; font-size: 13px; cursor: pointer; font-weight: 600; margin-bottom: 12px; }
         .start-camera-btn:hover { background: #333; }
         .start-camera-btn:disabled { background: #888; cursor: not-allowed; }
-        .upload-drop { border: 2px dashed #ccc; padding: 24px; text-align: center; color: #888; font-size: 12px; margin-top: 10px; cursor: pointer; }
-        .upload-drop:hover { border-color: #111; color: #111; }
         .upload-section-inner { display: none; }
         .upload-section-inner.active { display: block; }
-        .upload-actions { display: flex; gap: 8px; margin-top: 10px; }
-        .upload-actions .btn { flex: 1; text-align: center; }
         .process-status { font-size: 11px; color: #888; margin-top: 8px; min-height: 16px; }
+        .scan-idle-msg { font-size: 11px; color: #888; margin-top: 6px; }
     </style>
 </head>
 <body>
@@ -104,7 +99,7 @@
         <header>
             <div style="display:flex;align-items:center">
                 <h1>Barcode Scanner</h1>
-                <span class="version-badge" id="versionBadge">v3.3.0</span>
+                <span class="version-badge" id="versionBadge">v3.4.0</span>
             </div>
             <button class="btn" id="exportBtn">Export TXT</button>
         </header>
@@ -118,7 +113,7 @@
         <!-- SCAN tab -->
         <div class="scanner-section scan-section active">
             <button class="start-camera-btn" id="scanStartBtn">📷 Start Camera</button>
-            <div class="reader-box" id="scanReader" style="display:none">
+            <div class="reader-box" id="scanReader">
                 <div class="corner-tl"></div>
                 <div class="corner-tr"></div>
                 <div class="corner-bl"></div>
@@ -126,7 +121,7 @@
             </div>
             <div id="scanStatus" class="camera-status"></div>
             <div id="scanResult" class="result-box"></div>
-            <div class="controls" id="scanControls" style="display:none">
+            <div class="controls" id="scanControls">
                 <div class="control-row">
                     <label>Flash</label>
                     <button class="flash-btn" id="scanFlashBtn">🔦 Flash</button>
@@ -144,14 +139,14 @@
         <!-- OCR tab -->
         <div class="scanner-section ocr-section">
             <button class="start-camera-btn" id="ocrStartBtn">📷 Start Camera</button>
-            <div class="reader-box" id="ocrReader" style="display:none">
+            <div class="reader-box" id="ocrReader">
                 <div class="corner-tl"></div>
                 <div class="corner-tr"></div>
                 <div class="corner-bl"></div>
                 <div class="corner-br"></div>
             </div>
             <div id="ocrStatus" class="camera-status"></div>
-            <div class="controls" id="ocrControls" style="display:none">
+            <div class="controls" id="ocrControls">
                 <div class="control-row">
                     <label>Flash</label>
                     <button class="flash-btn" id="ocrFlashBtn">🔦 Flash</button>
@@ -164,7 +159,7 @@
                     </label>
                 </div>
             </div>
-            <button class="capture-btn" id="ocrCaptureBtn" style="display:none">📸 Capture &amp; Read Text</button>
+            <button class="capture-btn" id="ocrCaptureBtn">📸 Capture &amp; Read Text</button>
             <div id="ocrResult" class="result-box"></div>
         </div>
 
@@ -190,41 +185,39 @@
 
         <div class="footer">
             <div class="changelog-toggle" onclick="document.getElementById('changelog').classList.toggle('visible')">
-                ▼ <span id="changelogLabel">Changelog v3.3.0</span>
+                ▼ <span id="changelogLabel">Changelog v3.4.0</span>
             </div>
             <div class="changelog" id="changelog">
-                <div class="changelog-item"><strong>v3.3.0</strong> — Scan/OCR: start camera on button click. Upload: barcode/QR first → OCR only if no barcode found; max 10 candidates shown with scroll.</div>
+                <div class="changelog-item"><strong>v3.4.0</strong> — Scan: show result immediately on detection, 10s timeout shows "No detected". Camera stays alive on tab switch. Upload: barcode must have ≥3 alphanumeric chars to use, else OCR.</div>
+                <div class="changelog-item"><strong>v3.3.0</strong> — Scan/OCR: start camera on button click. Upload: barcode/QR first → OCR only if no barcode found; max 10 candidates.</div>
                 <div class="changelog-item"><strong>v3.2.1</strong> — Fix CDN: @zxing/library@0.18.6 instead of deprecated @aspect-dev/zxing-wasm.</div>
-                <div class="changelog-item"><strong>v3.2.0</strong> — Rewrite: scan uses video element, camera init refactored for reliability.</div>
-                <div class="changelog-item"><strong>v3.1.0</strong> — ZXing CDN build, lower resolution (1280×720), faster start.</div>
             </div>
         </div>
     </div>
 
     <script>
-const VERSION = '3.3.0';
+const VERSION = '3.4.0';
 const STORAGE_KEY = 'barcode_history_v3';
-const SCAN_COOLDOWN_MS = 2500;
+const SCAN_COOLDOWN_MS = 1500;
 const OCR_BOX_W = 250;
 const OCR_BOX_H = 150;
-const FORMAT_STABILITY_THRESHOLD = 2;
 const MAX_CANDIDATES = 10;
+const SCAN_TIMEOUT_MS = 10000;
 
-// State
 let scanVideo = null;
 let scanStream = null;
 let scanReaderInstance = null;
 let ocrVideo = null;
 let ocrStream = null;
+let scanDebounceTimer = null;
+let scanNoDetectTimer = null;
 let scanLastValue = '';
 let scanLastTime = 0;
-let scanCandidates = {};
 let bwEnabled = true;
 let flashEnabled = false;
 let currentTab = 'scan';
-let cameraStarted = { scan: false, ocr: false };
+let cameraState = { scan: 'idle', ocr: 'idle' };
 
-// ─── HELPERS ───
 function getAllFormats() {
     return [
         ZXing.BarcodeFormat.QR_CODE,
@@ -274,64 +267,57 @@ function showCandidates(id, items, onUse) {
     });
 }
 
+function addToHistory(value, type) {
+    const h = getHistory();
+    if (h.length && h[0].value === value) return;
+    h.unshift({ value, type, time: new Date().toLocaleString() });
+    if (h.length > 200) h.splice(200);
+    saveHistory(h);
+    renderHistory();
+}
+function getHistory() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+    catch { return []; }
+}
+function saveHistory(h) { localStorage.setItem(STORAGE_KEY, JSON.stringify(h)); }
+
 // ─── SCAN ───
-function clearScanCandidates() { scanCandidates = {}; }
-
-function addScanCandidate(value, format) {
-    if (!scanCandidates[value]) scanCandidates[value] = { format, count: 0 };
-    scanCandidates[value].count++;
+function clearScanTimers() {
+    if (scanDebounceTimer) { clearTimeout(scanDebounceTimer); scanDebounceTimer = null; }
+    if (scanNoDetectTimer) { clearTimeout(scanNoDetectTimer); scanNoDetectTimer = null; }
 }
 
-function getStableScan() {
-    const entries = Object.entries(scanCandidates);
-    const stable = entries.filter(([, d]) => d.count >= FORMAT_STABILITY_THRESHOLD);
-    if (stable.length) {
-        stable.sort((a, b) => b[1].count - a[1].count);
-        return { value: stable[0][0], format: stable[0][1].format };
-    }
-    if (entries.length) {
-        entries.sort((a, b) => b[1].count - a[1].count);
-        return { value: entries[0][0], format: entries[0][1].format };
-    }
-    return null;
-}
-
-function onScanResult(value, format) {
+function onBarcodeDetected(value, format) {
     const now = Date.now();
+    // Cooldown: same value within window
     if (value === scanLastValue && (now - scanLastTime < SCAN_COOLDOWN_MS)) return;
+
     scanLastValue = value;
     scanLastTime = now;
-    addToHistory(value, format);
+
     const el = document.getElementById('scanResult');
     el.textContent = `✓ ${value} (${format})`;
     el.className = 'result-box active success';
-    clearScanCandidates();
-}
+    addToHistory(value, format);
 
-function onScanFormats() {
-    const entries = Object.entries(scanCandidates);
-    if (entries.length > 1) {
-        const items = entries.sort((a, b) => b[1].count - a[1].count).map(([v]) => v);
-        showCandidates('scanResult', items, v => {
-            const fmt = scanCandidates[v]?.format || 'barcode';
-            const el = document.getElementById('scanResult');
-            el.textContent = `✓ ${v} (${fmt})`;
-            el.className = 'result-box active success';
-            addToHistory(v, fmt);
-            clearScanCandidates();
-        });
-    }
+    // Reset no-detect timer
+    clearScanTimers();
+    scanNoDetectTimer = setTimeout(() => {
+        // Scanner still running but nothing new — do nothing, keep showing result
+        setStatus('scanStatus', 'Point at barcode — last: ' + value, 'success');
+    }, SCAN_TIMEOUT_MS);
 }
 
 async function initScanCamera() {
     const readerEl = document.getElementById('scanReader');
     const startBtn = document.getElementById('scanStartBtn');
-    const controls = document.getElementById('scanControls');
     const resultEl = document.getElementById('scanResult');
 
     resultEl.className = 'result-box';
-    resultEl.innerHTML = '';
-    clearScanCandidates();
+    resultEl.textContent = '';
+    clearScanTimers();
+    scanLastValue = '';
+    scanLastTime = 0;
 
     if (scanReaderInstance) {
         try { scanReaderInstance.stop(); } catch(e) {}
@@ -370,36 +356,35 @@ async function initScanCamera() {
             setTimeout(() => resolve(), 3000);
         });
 
-        readerEl.style.display = 'block';
-        controls.style.display = 'flex';
+        readerEl.classList.add('visible');
         startBtn.style.display = 'none';
-        cameraStarted.scan = true;
+        cameraState.scan = 'active';
 
-        setStatus('scanStatus', 'Camera ready — point at barcode', 'success');
+        setStatus('scanStatus', 'Point at barcode', 'success');
 
-        // Create reader with all formats - kept as module variable so it doesn't get GC'd
+        // 10-second no-detect timeout
+        clearScanTimers();
+        scanNoDetectTimer = setTimeout(() => {
+            const el = document.getElementById('scanResult');
+            const cur = el.textContent;
+            if (!cur || !cur.startsWith('✓')) {
+                el.textContent = 'No barcode detected';
+                el.className = 'result-box active error';
+            }
+        }, SCAN_TIMEOUT_MS);
+
         const hints = new Map();
         hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, getAllFormats());
         hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
         scanReaderInstance = new ZXing.BrowserMultiFormatReader(hints);
 
         scanReaderInstance.decodeFromVideoElement(scanVideo,
-            (result, err) => {
+            (result) => {
                 if (!result || !result.text) return;
-                const text = result.text;
-                const fmtObj = result.format ? result.format : null;
-                const fmtName = fmtObj && fmtObj.formatName ? fmtObj.formatName : 'barcode';
-                addScanCandidate(text, fmtName);
-                const stable = getStableScan();
-                if (stable && Object.keys(scanCandidates).length === 1) {
-                    onScanResult(stable.value, stable.format);
-                } else if (Object.keys(scanCandidates).length > 1) {
-                    onScanFormats();
-                }
+                const fmt = result.format && result.format.formatName ? result.format.formatName : 'barcode';
+                onBarcodeDetected(result.text, fmt);
             },
-            (err) => {
-                // continuous scan - ignore errors
-            }
+            (err) => { /* continuous, ignore */ }
         );
 
     } catch (err) {
@@ -407,6 +392,7 @@ async function initScanCamera() {
         startBtn.disabled = false;
         startBtn.textContent = '📷 Start Camera';
         startBtn.style.display = 'block';
+        cameraState.scan = 'idle';
     }
 }
 
@@ -414,12 +400,11 @@ async function initScanCamera() {
 async function initOcrCamera() {
     const readerEl = document.getElementById('ocrReader');
     const startBtn = document.getElementById('ocrStartBtn');
-    const controls = document.getElementById('ocrControls');
     const captureBtn = document.getElementById('ocrCaptureBtn');
     const resultEl = document.getElementById('ocrResult');
 
     resultEl.className = 'result-box';
-    resultEl.innerHTML = '';
+    resultEl.textContent = '';
 
     if (ocrVideo) { ocrVideo.srcObject = null; ocrVideo.remove(); ocrVideo = null; }
     if (ocrStream) { ocrStream.getTracks().forEach(t => t.stop()); ocrStream = null; }
@@ -454,11 +439,10 @@ async function initOcrCamera() {
             setTimeout(() => resolve(), 3000);
         });
 
-        readerEl.style.display = 'block';
-        controls.style.display = 'flex';
+        readerEl.classList.add('visible');
         captureBtn.style.display = 'block';
         startBtn.style.display = 'none';
-        cameraStarted.ocr = true;
+        cameraState.ocr = 'active';
 
         setStatus('ocrStatus', 'Camera ready — frame your text', 'success');
 
@@ -467,6 +451,7 @@ async function initOcrCamera() {
         startBtn.disabled = false;
         startBtn.textContent = '📷 Start Camera';
         startBtn.style.display = 'block';
+        cameraState.ocr = 'idle';
     }
 }
 
@@ -506,7 +491,6 @@ document.getElementById('ocrCaptureBtn').addEventListener('click', async () => {
         const cropCtx = cropCanvas.getContext('2d');
         cropCtx.drawImage(fullCanvas, boxX, boxY, boxW, boxH, 0, 0, boxW, boxH);
 
-        // Enhance contrast
         const imgData = cropCtx.getImageData(0, 0, boxW, boxH);
         for (let i = 0; i < imgData.data.length; i += 4) {
             const gray = imgData.data[i] * 0.299 + imgData.data[i+1] * 0.587 + imgData.data[i+2] * 0.114;
@@ -582,10 +566,9 @@ document.getElementById('fileInput').addEventListener('change', async (e) => {
     reader.onload = async (e) => {
         preview.src = e.target.result;
         preview.style.display = 'block';
-        statusEl.textContent = 'Detecting barcode/QR code…';
+        statusEl.textContent = 'Detecting barcode/QR…';
 
         // Step 1: Try barcode/QR scan
-        let barcodeFound = false;
         try {
             const hints = new Map();
             hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, getAllFormats());
@@ -593,18 +576,23 @@ document.getElementById('fileInput').addEventListener('change', async (e) => {
             const scanner = new ZXing.BrowserMultiFormatReader(hints);
             const result = await scanner.decodeFromImageUrl(preview.src);
             if (result?.text) {
-                const fmt = result.format && result.format.formatName ? result.format.formatName : 'barcode';
-                statusEl.textContent = '';
-                showResult('uploadResult', `✓ ${result.text} (${fmt})`, 'success');
-                addToHistory(result.text, fmt);
-                return;
+                const txt = result.text.trim();
+                const alphaCount = (txt.match(/[A-Za-z0-9]/g) || []).length;
+                // Only use barcode result if it has ≥3 alphanumeric chars (avoid garbage detections)
+                if (alphaCount >= 3) {
+                    const fmt = result.format && result.format.formatName ? result.format.formatName : 'barcode';
+                    statusEl.textContent = '';
+                    showResult('uploadResult', `✓ ${txt} (${fmt})`, 'success');
+                    addToHistory(txt, fmt);
+                    return;
+                }
             }
         } catch(barcodeErr) {
             // no barcode found - proceed to OCR
         }
 
-        // Step 2: Barcode not found → try OCR
-        statusEl.textContent = 'No barcode found — running OCR…';
+        // Step 2: Barcode not found or too weak → run OCR
+        statusEl.textContent = 'Running OCR…';
         try {
             const ocrResult = await Tesseract.recognize(e.target.result, 'eng', { logger: () => {} });
             const text = (ocrResult?.data?.text || '').trim();
@@ -644,19 +632,6 @@ document.getElementById('fileInput').addEventListener('change', async (e) => {
 });
 
 // ─── HISTORY ───
-function getHistory() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
-    catch { return []; }
-}
-function saveHistory(h) { localStorage.setItem(STORAGE_KEY, JSON.stringify(h)); }
-function addToHistory(value, type) {
-    const h = getHistory();
-    if (h.length && h[0].value === value) return;
-    h.unshift({ value, type, time: new Date().toLocaleString() });
-    if (h.length > 200) h.splice(200);
-    saveHistory(h);
-    renderHistory();
-}
 function deleteItem(i) {
     const h = getHistory(); h.splice(i, 1); saveHistory(h); renderHistory();
 }
@@ -721,32 +696,51 @@ document.querySelectorAll('.tab').forEach(tab => {
         const target = tab.dataset.tab;
         if (target === currentTab) return;
 
-        // Stop current camera
-        if (currentTab === 'scan' && cameraStarted.scan) {
-            if (scanReaderInstance) { try { scanReaderInstance.stop(); } catch(e) {} scanReaderInstance = null; }
-            if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
-            if (scanVideo) { scanVideo.srcObject = null; scanVideo = null; }
-            cameraStarted.scan = false;
-        } else if (currentTab === 'ocr' && cameraStarted.ocr) {
-            if (ocrStream) { ocrStream.getTracks().forEach(t => t.stop()); ocrStream = null; }
-            if (ocrVideo) { ocrVideo.srcObject = null; ocrVideo = null; }
-            cameraStarted.ocr = false;
-        }
-
         // Switch tab
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.scanner-section').forEach(s => s.classList.remove('active'));
         tab.classList.add('active');
         document.querySelector(`.${target}-section`).classList.add('active');
+
+        // Hide/show camera video elements (don't stop camera streams)
+        const scanReader = document.getElementById('scanReader');
+        const ocrReader = document.getElementById('ocrReader');
+        const scanControls = document.getElementById('scanControls');
+        const ocrControls = document.getElementById('ocrControls');
+        const scanResult = document.getElementById('scanResult');
+        const ocrResult = document.getElementById('ocrResult');
+
+        if (currentTab === 'scan') {
+            // Hide scan camera but keep it running
+            scanReader.classList.remove('visible');
+        } else if (currentTab === 'ocr') {
+            ocrReader.classList.remove('visible');
+        }
+
+        if (target === 'scan') {
+            scanReader.classList.add('visible');
+            if (cameraState.scan !== 'active') {
+                // Camera not started yet — show start button
+                document.getElementById('scanStartBtn').style.display = 'block';
+                scanResult.className = 'result-box';
+                scanResult.textContent = '';
+            }
+        } else if (target === 'ocr') {
+            ocrReader.classList.add('visible');
+            if (cameraState.ocr !== 'active') {
+                document.getElementById('ocrStartBtn').style.display = 'block';
+                ocrResult.className = 'result-box';
+                ocrResult.textContent = '';
+            }
+        }
+
         currentTab = target;
     });
 });
 
-// Scan/OCR start buttons
 document.getElementById('scanStartBtn').addEventListener('click', initScanCamera);
 document.getElementById('ocrStartBtn').addEventListener('click', initOcrCamera);
 
-// ─── INIT ───
 document.getElementById('versionBadge').textContent = `v${VERSION}`;
 document.getElementById('changelogLabel').textContent = `Changelog v${VERSION}`;
 renderHistory();
