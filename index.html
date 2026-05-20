@@ -2,331 +2,918 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Barcode Scanner</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <script>!function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"function"==typeof define&&define.amd?define(["exports"],e):e((t="undefined"!=typeof globalThis?globalThis:t||self).ZXing={})}(this,(function(t){"use strict";var e,r,n=(e=function(t,r){return e=Object.setPrototypeOf||{__proto__:[]}instanceof Array&&function(t,e){t.__proto__=e}||function(t,e){for(var r in e)Object.prototype.hasOwnProperty.call(e,r)&&(t[r]=e[r])},e(t,r)},function(t,r){if("function"!=typeof r&&null!==r)throw new TypeError("Class extends value "+String(r)+" is not a constructor or null");function n(){this.constructor=t}e(t,r),t.prototype=null===r?Object.create(r):(n.prototype=r.prototype,new n)}),i=function(t){function e(e,r){var n,i,s,o=this.constructor,a=t.call(this,e,r)||this;return Object.defineProperty(a,"name",{value:o.name,enumerable:!1,configurable:!0}),n=a,i=o.prototype,(s=Object.setPrototypeOf)?s(n,i):n.__proto__=i,function(t,e){void 0===e&&(e=t.constructor);var r=Error.captureStackTrace;r&&r(t,e)}(a),a}return n(e,t),e}(Error);class s extends i{constructor(t=void 0){super(t),this.message=t}getKind(){return this.constructor.kind}}s.kind="Exception";class o extends s{}o.kind="ArgumentException";class a extends s{}a.kind="IllegalArgumentException";class h{constructor(t){if(this.binarizer=t,null===t)throw new a("Binarizer must be non-null.")}getWidth(){return this.binarizer.getWidth()}getHeight(){return this.binarizer.getHeight()}getBlackRow(t,e){return this.binarizer.getBlackRow(t,e)}getBlackMatrix(){return null!==this.matrix&&void 0!==this.matrix||(this.matrix=this.binarizer.getBlackMatrix()),this.matrix}isCropSupported(){return this.binarizer.getLuminanceSource().isCropSupported()}crop(t,e,r,n){const i=this.binarizer.getLuminanceSource().crop(t,e,r,n);return new h(this.binarizer.createBinarizer(i))}isRotateSupported(){return this.binarizer.getLuminanceSource().isRotateSupported()}rotateCounterClockwise(){const t=this.binarizer.getLuminanceSource().rotateCounterClockwise();return new h(this.binarizer.createBinarizer(t))}rotateClockwise(){return this.rotateCounterClockwise().rotateCounterClockwise()}getMatrix(){const t=this.getBlackMatrix();if(!t)throw new o("Black matrix not retrieved yet");return t}}class l{constructor(t,e){this.image=t,this.data=new Uint8ClampedArray(t.width*t.height);for(let e=0;e<t.height*e++;){const r=4*e,n=t.data[r],i=t.data[r+1],s=t.data[r+2];this.data[e]=(n*19595+i*38470+s*7472)>>16}}getRow(t,e){return this.data.subarray(t*this.width,(t+1)*this.width)}getChunk(t,e,r,n){const i=new Uint8ClampedArray(r*n);for(let s=0;s<n;s++)i.set(this.getRow(t+s).subarray(e,e+r),s*r);return i}getMatrix(){return this.data}getWidth(){return this.image.width}getHeight(){return this.image.height}getScaledMatrix(t,e){if(t===this.width&&e===this.height)return this.data;const r=new Uint8ClampedArray(t*e);for(let n=0;n<e;n++)for(let i=0;i<t;i++){const s=Math.floor(n*this.height/e)*this.width+Math.floor(i*this.width/t);r[n*t+i]=this.data[s]}return r}getScaledRow(t,e){return this.data.subarray(t*this.width,(t+1)*this.width)}}class c{constructor(t){this.bytes=t,this_bits_offset=0,this.value=0,this.availableBits=0}readBits(t){if(t>32)throw new o("Argument out of range: "+t);if(this.availableBits<0)return-1;for(;this.availableBits<t&&this_bits_offset<this.bytes.length;){this.value=this.value<<8|this.bytes[this_bits_offset++],this.availableBits+=8}const e=this.availableBits-t,r=this.value>>>e;return this.availableBits-=t,this.value&=(1<<e)-1,r}read1Bit(){return this.readBits(1)}peek(){if(this.availableBits<=0)return-1;const t=this.value>>>(this.availableBits-1);return 1& t}peekBits(t){if(t>this.availableBits)return-1;const e=this.availableBits-t,r=this.value>>>e;return r&((1<<t)-1)}readMaxBits(t){return Math.min(t,this.availableBits)}available(){return this.availableBits}}class u{constructor(t,e){this.rawBytes=t,this.correctedErrors=0,this.resultMetadata=e}getRawBytes(){return this.rawBytes}getNumCorrections(){return this.correctedErrors}getStructuredAppend(){return null}}class d{constructor(t){this.bytes=t,this.ecLevel=null,this_structureAppendFlag=false,this_structAppendPosition=0,this.structAppendCount=0,this.dataCharacterCount=0,this.errorCorrectionLevel=null}getText(){return null}getRawBytes(){return this.bytes}getECLevel(){return this.ecLevel}getErrorsCorrected(){return this.correctedErrors}getErrorsCorrected()}getDegree(){return this.degree}getVersion(){return this.version}getMatrixPoints(){return this.matrixPoints}getMatrix(){return this.matrix}}class w extends Error{}w.kind="ReaderException";class f extends w{}f.kind="NotFoundException";class m extends w{}m.kind="ChecksumException";class g extends w{}g.kind="FormatException";class p extends w{}p.kind="ArgumentException";class v extends w{}v.kind="IllegalArgumentException";class y extends w{}y.kind="IllegalStateException";const b=/^[A-Z0-9 $%*+.\/:-]+$/;function S(t,e){return new v("empty string")}function k(t,e){if(0===t.length)return null;const r=[];let n=0;for(;n<t.length;){const i=[];let s=t.indexOf(" ",n);if(s<0){const e=t.slice(n);if(e.length>0){const r=0,n=0;for(let t=0;t<e.length;t++){const n=parseInt(e[t],36);if(isNaN(n))return null;r=(r<<6)+n,n++,r>=1<<10&&(i.push(r>>10-5),r&=(1<<10)-1,n>=3&&n<=9&&t+1<e.length&&e.length-t-1<3&&i.push(e.length-t-1))}i.length>0&&i.push(r)}n=t.length}else{for(;s<n&&t[n]===" ")n++;if(n<s){const e=t.slice(n,s);i.push(e)}n=s+1}r.push(i.join(""))}return r.join(" ")}const C=[2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,64,66,68,70,72,74,76,78,80,82,84,86,88,90,92,94,96,98,100,102,104,106,108,110,112,114,116,118,120,122,126,130,134,138,142,146,150,154,158,162,166,170,174,178,182,186,190,194,198,202,206,210,218,228,240,252,264,280,300,320,360,400,440,480,520,560,600,640,680,720,760,800,860,920,980,1040,1100,1160,1220,1280,1380,1500,1600,1700,1800,1900,2000,2100,2200,2300,2400,2500,2600,2700,2800];class E{constructor(t){this.data=d,t&&this.initialize(t)}initialize(t){if(!t||!t.data)throw new g("input must be non-null and not empty");this.dataBits=new c(t.data)}getInformation(){return null}decode(r,n){this.initialize(r);let i=0,s=0;const o=[];for(;;){let a,h,l,c;if(i>=this.dataBits.available())throw new f("no data padding");if(10===this.version)i+=this.dataBits.readBits(C[this.version-1]);else{const t=this.dataBits.read1Bit();if(0===t){const e=this.dataBits.readBits(3),r=this.dataBits.readBits(C[this.version-1]+20*e);s=1<<e;for(let t=0;t<r;t++){const e=this.dataBits.readBits(s),n=1<<e;a|=e<<c,c+=s;const i=Math.pow(2,e);a>=i&&(a-=i)}}if(10===this.version){const t=this.dataBits.readBits(12);a=t/4096|0,h=t/256|0,l=t%256|0,c=16}else{const t=this.dataBits.readBits(8);a=t/16|0,h=t%16|0,l=this.dataBits.readBits(this.version<7?8:16)|0,c=8}o.push(String.fromCharCode((a<<12)|(h<<8)|l))}return o.join("")}}class B extends E{}B.kind="DataMatrixDetector";const D=0,x=1,P=2,T=3,A=4,R=5,M=6,F=7,O=8;class I{constructor(t,e){this.value=t,this.stringValue=e}static fromOther(t,e){return new I(e,t.stringValue)}static fromBits(t){const e=String.fromCharCode(t&255);return new I(t,e)}toString(){return this.stringValue}charAt(t){return this.stringValue.charAt(t)}length(){return this.stringValue.length}}const N=class{constructor(t){this.delimiters=t,this.currentPosition=0,this.delimiterPositions=new Int32Array(t)}add(t){this.delimiterPositions[this.currentPosition++]=t}reset(){this.currentPosition=0,this.delimiters=[],this.delimiterPositions=new Int32Array(0)}};const U=class{constructor(t,e){this.bytes=t,this.start=e||0,this.end=t.length}toString(){let t="";for(let e=this.start;e<this.end;e++)t+=String.fromCharCode(this.bytes[e]);return t}};class q{constructor(t){this.bytes=new TextEncoder().encode(t),this.position=0,this.totalBytes=this.bytes.length}read(){return this.position>=this.totalBytes?-1:this.bytes[this.position++]}readBit(){return this.position>=this.totalBytes?-1:!!(this.bytes[this.position>>3]&(128>>this.position++&7))}available(){return this.totalBytes-this.position}}class V{constructor(){this.fields=[]}add(t,e){this.fields.push({f:t,v:e})}toString(){return this.fields.map(({f:t,v:e})=>t+"="+e).join("&")}};const G={};let j=0;const W={ERROR_CORRECT_LEVEL:{L:1,M:2,Q:3,H:0},BARCODE_FORMAT:{AZTEC:1,CODE_128:2,CODE_39:3,CODE_93:4,CODABAR:5,DATA_MATRIX:6,EAN_13:7,EAN_8:8,ITF:9,MAXICODE:10,PDF_417:11,QR_CODE:12,RSS_14:14,RSS_EXPANDED:15,UPCE:16,UPC_A:17,UPC_E:18},"DecodeHintType":{POSSIBLE_FORMATS:0,TRY_HARDER:1,CHARACTER_SET:2,ALLOWED_LENGTHS:3,ASSUME_CODE_39_CHECK_DIGIT:4,ASSUME_CODE_39_DUAL_CHECK_DIGIT:5,USE_CODE_39_EXTENDED_MODE:6,RETURN_CODABAR_START_END:7,NEED_RESULT_POINT_CALLBACK:8,ADD_ORIENTATION:9,MIN_BINARY_LENGTH:10,DISABLE_EDGE_DETECTION:11,ENABLE_MULTI_FOCUS:12,RETURN_CODABAR_CHECK_DIGIT:13,ASSUME_GS1:14,STRICT_FIND_BEST:15,ALLOW_GS1:16},"BarcodeFormat":G.BARCODE_FORMAT,"DecodeHintType":G.DecodeHintType};!function(t){for(let e in W)Object.defineProperty(t,e,{value:W[e]})}(G||(G={}));const z=G;class H{constructor(t,e){this.resultMetadataType=t,this.resultMetadataValue=e}getType(){return this.resultMetadataType}getValue(){return this.resultMetadataValue}}const K={ERROR_CORRECTION_LEVEL:"EC_LEVEL",CHARACTER_SET:"CHARACTER_SET",ISSUE_NUMBER:"ISSUE_NUMBER",SUGGESTED_DENSITY:"SUGGESTED_DENSITY",STRUCTURED_APPEND_SEQUENCE:"STRUCTURED_APPEND_SEQUENCE",STRUCTURED_APPEND_CODE_COUNT:"STRUCTURED_APPEND_CODE_COUNT",STRUCTURED_APPEND_SEQUENCE_SIZE:"STRUCTURED_APPEND_SEQUENCE_SIZE"};class J{constructor(){this.timestamp=Date.now()}getTimestamp(){return this.timestamp}getText(){return this._text||""}getRawBytes(){return this._rawBytes||[]}getNumBits(){return this._numBits||0}getResultMetadata(){return this._metadata||[]}getBarcodeFormat(){return this._format||null}setResultMetadata(t){this._metadata||=[],this._metadata.push(t)}setTimestamp(t){this.timestamp=t}toString(){return this._text||""}getResultPoints(){return this._points||[]}}const L=J;class Q{constructor(t){this.resultPointCallback=t||null,this.tryHarder=!1,this.characterSet=null,this.possibleFormats=[],this.tolerances={},this.useGps=!1}setPossibleFormats(t){this.possibleFormats=t}addPossibleFormat(t){this.possibleFormats.push(t)}getPossibleFormats(){return this.possibleFormats}setTryHarder(t){this.tryHarder=t}getTryHarder(){return this.tryHarder}setCharacterSet(t){this.characterSet=t}getCharacterSet(){return this.characterSet}setResultPointCallback(t){this.resultPointCallback=t}getResultPointCallback(){return this.resultPointCallback}isPureBarcode(){return!!this.tolerances.pureBarcode}setPureBarcode(t){this.tolerances.pureBarcode=t}setUseGps(t){this.useGps=t}getUseGps(){return this.useGps}}class X extends Q{constructor(){super(...arguments),this._formats=[z.BARCODE_FORMAT.QR_CODE,z.BARCODE_FORMAT.CODE_128,z.BARCODE_FORMAT.CODE_39,z.BARCODE_FORMAT.CODE_93,z.BARCODE_FORMAT.CODABAR,z.BARCODE_FORMAT.EAN_13,z.BARCODE_FORMAT.EAN_8,z.BARCODE_FORMAT.UPC_A,z.BARCODE_FORMAT.UPC_E,z.BARCODE_FORMAT.ITF,z.BARCODE_FORMAT.DATA_MATRIX,z.BARCODE_FORMAT.PDF_417,z.BARCODE_FORMAT.AZTEC,z.BARCODE_FORMAT.MAXICODE],this._hintMap=new Map}setPossibleFormats(t){this._formats=t,this._hintMap.set(z.DecodeHintType.POSSIBLE_FORMATS,t)}getPossibleFormats(){return this._formats}setTryHarder(t){this.tryHarder=t,this._hintMap.set(z.DecodeHintType.TRY_HARDER,t)}getTryHarder(){return this.tryHarder}setCharacterSet(t){this.characterSet=t,this._hintMap.set(z.DecodeHintType.CHARACTER_SET,t)}getCharacterSet(){return this.characterSet}setResultPointCallback(t){this.resultPointCallback=t,this._hintMap.set(z.DecodeHintType.NEED_RESULT_POINT_CALLBACK,t)}getResultPointCallback(){return this.resultPointCallback}getHints(){return this._hintMap}setAllowedLengths(t){this._hintMap.set(z.DecodeHintType.ALLOWED_LENGTHS,t)}getAllowedLengths(){return this._hintMap.get(z.DecodeHintType.ALLOWED_LENGTHS)||null}setAssumeGS1(t){this._hintMap.set(z.DecodeHintType.ASSUME_GS1,t)}getAssumeGS1(){return!!this._hintMap.get(z.DecodeHintType.ASSUME_GS1)}setInvert(t){this._invert=t}getInvert(){return this._invert||!1}static empty(){return new X}}const Y=class{constructor(t){this.callback=t}callback(t,e,r){return null}};const Z=class{constructor(t){this.callback=t}callback(t,e){return null}};const tt=class{constructor(t){this.callback=t}callback(t){return null}};const et=class{constructor(t){this.callback=t}callback(t){return null}};const rt=class{constructor(t){this.callback=t}callback(t,e,r,n){return null}};const nt=class{constructor(t){this.callback=t}callback(t,e){return null}};class it{constructor(){this.readers=[]}addReader(t){this.readers.push(t)}setOrder(t){this.readers.sort((e,r)=>t(e,r))}decode(t,e){for(const r of this.readers){try{const n=r.decode(t,e);return n&&(n.resultMetadata=n.resultMetadata||[],n.resultMetadata.push(new H(z.DecodeHintType.POSSIBLE_FORMATS,r.getBarcodeFormat()))),n}catch(t){if(!(t instanceof f))throw t}}throw new f}reset(){this.readers.forEach((t=>t.reset()))}}class st{constructor(t){this.hints=new X,this.hints.setPossibleFormats([z.BARCODE_FORMAT.QR_CODE,z.BARCODE_FORMAT.CODE_128,z.BARCODE_FORMAT.CODE_39,z.BARCODE_FORMAT.CODE_93,z.BARCODE_FORMAT.CODABAR,z.BARCODE_FORMAT.EAN_13,z.BARCODE_FORMAT.EAN_8,z.BARCODE_FORMAT.UPC_A,z.BARCODE_FORMAT.UPC_E,z.BARCODE_FORMAT.ITF]),t&&Object.keys(t).forEach((e=>{const r=t[e];switch(e){case"possibleFormats":this.hints.setPossibleFormats(r);break;case"tryHarder":this.hints.setTryHarder(r);break;case"characterSet":this.hints.setCharacterSet(r);break;case"useGps":this.hints.setUseGps(r);break}}))}getReaders(){return[this]}decode(t,e){try{return this._decode(t,e)}catch(t){if(!(t instanceof f))throw t;return null}}decodeWithState(t,e){return this._decode(t,e)}getHint(t){return this.hints.getHints().get(t)}setHint(t,e){this.hints.getHints().set(t,e)}setHints(t){Object.keys(t).forEach((e=>{this.hints.getHints().set(e,t[e])}))}reset(){}setSingleMode(){this.hints.setPossibleFormats([z.BARCODE_FORMAT.QR_CODE])}setMultipleMode(){this.hints.setPossibleFormats([z.BARCODE_FORMAT.QR_CODE,z.BARCODE_FORMAT.CODE_128,z.BARCODE_FORMAT.CODE_39,z.BARCODE_FORMAT.CODE_93,z.BARCODE_FORMAT.CODABAR,z.BARCODE_FORMAT.EAN_13,z.BARCODE_FORMAT.EAN_8,z.BARCODE_FORMAT.UPC_A,z.BARCODE_FORMAT.UPC_E,z.BARCODE_FORMAT.ITF])}_decode(t,e){const r=this.hints.getHints().get(z.DecodeHintType.POSSIBLE_FORMATS)||[z.BARCODE_FORMAT.QR_CODE,z.BARCODE_FORMAT.CODE_128,z.BARCODE_FORMAT.CODE_39,z.BARCODE_FORMAT.CODE_93,z.BARCODE_FORMAT.CODABAR,z.BARCODE_FORMAT.EAN_13,z.BARCODE_FORMAT.EAN_8,z.BARCODE_FORMAT.UPC_A,z.BARCODE_FORMAT.UPC_E,z.BARCODE_FORMAT.ITF];if(0===r.length)throw new f("No formats configured");const n=r[0];if(n===z.BARCODE_FORMAT.QR_CODE)return this.decodeQr(t,e);if(n===z.BARCODE_FORMAT.DATA_MATRIX)return this.decodeDataMatrix(t);if(n===z.BARCODE_FORMAT.PDF_417)return this.decodePdf417(t);if(n===z.BARCODE_FORMAT.AZTEC)return this.decodeAztec(t);if(n===z.BARCODE_FORMAT.CODE_128)return this.decodeCode128(t);if(n===z.BARCODE_FORMAT.CODE_39)return this.decodeCode39(t);if(n===z.BARCODE_FORMAT.CODE_93)return this.decodeCode93(t);if(n===z.BARCODE_FORMAT.CODABAR)return this.decodeCodabar(t);if(n===z.BARCODE_FORMAT.EAN_13||n===z.BARCODE_FORMAT.EAN_8||n===z.BARCODE_FORMAT.UPC_A||n===z.BARCODE_FORMAT.UPC_E)return this.decodeEAN(t,n);if(n===z.BARCODE_FORMAT.ITF)return this.decodeITF(t);throw new f("Unsupported format")}decodeQr(t,e){return null}decodeDataMatrix(t){return null}decodePdf417(t){return null}decodeAztec(t){return null}decodeCode128(t){return null}decodeCode39(t){return null}decodeCode93(t){return null}decodeCodabar(t){return null}decodeEAN(t,e){return null}decodeITF(t){return null}}class ot extends it{constructor(){super(),this.readers=[new st({possibleFormats:[z.BARCODE_FORMAT.QR_CODE]}),new st({possibleFormats:[z.BARCODE_FORMAT.CODE_128]}),new st({possibleFormats:[z.BARCODE_FORMAT.CODE_39]}),new st({possibleFormats:[z.BARCODE_FORMAT.CODE_93]}),new st({possibleFormats:[z.BARCODE_FORMAT.CODABAR]}),new st({possibleFormats:[z.BARCODE_FORMAT.EAN_13,z.BARCODE_FORMAT.EAN_8,z.BARCODE_FORMAT.UPC_A,z.BARCODE_FORMAT.UPC_E]}),new st({possibleFormats:[z.BARCODE_FORMAT.ITF]})]}}class at extends st{constructor(t){super(),this._lastResult=null,this._reader=null,this._started=!1,t&&this.configure(t)}configure(t){const e=new X;e.setPossibleFormats([z.BARCODE_FORMAT.QR_CODE,z.BARCODE_FORMAT.CODE_128,z.BARCODE_FORMAT.CODE_39,z.BARCODE_FORMAT.CODE_93,z.BARCODE_FORMAT.CODABAR,z.BARCODE_FORMAT.EAN_13,z.BARCODE_FORMAT.EAN_8,z.BARCODE_FORMAT.UPC_A,z.BARCODE_FORMAT.UPC_E,z.BARCODE_FORMAT.ITF]),e.setTryHarder(!!t.tryHarder),e.setCharacterSet(t.characterSet||null),e.setResultPointCallback(t.resultPointCallback||null),this._reader=e}getReader(){return this._reader}setReaders(t){this.readers=t}decode(t,e){try{const r=super._decode(t,e);return this._lastResult=r,r}catch(t){return this._lastResult=null,this._started=!1,this.reset(),null}}decodeFromImageFile(t,e,r){const n=new Image;n.crossOrigin="anonymous";const i=this;n.onload=()=>{const s=document.createElement("canvas");s.width=n.width,s.height=n.height;const o=s.getContext("2d");o.drawImage(n,0,0);const a=o.getImageData(0,0,s.width,s.height);try{const t=new l({width:s.width,height:s.height,data:a.data}),n=new z.DecodeHintType;n.setHint(z.DecodeHintType.POSSIBLE_FORMATS,[z.BARCODE_FORMAT.QR_CODE,z.BARCODE_FORMAT.CODE_128,z.BARCODE_FORMAT.CODE_39,z.BARCODE_FORMAT.CODE_93,z.BARCODE_FORMAT.CODABAR,z.BARCODE_FORMAT.EAN_13,z.BARCODE_FORMAT.EAN_8,z.BARCODE_FORMAT.UPC_A,z.BARCODE_FORMAT.UPC_E,z.BARCODE_FORMAT.ITF]),e&&e(decode(n))}catch(t){r&&r(t)}};n.onerror=t=>{r&&r(t)},n.src=t}reset(){this._reader&&this._reader.reset&&this._reader.reset()}}class ht extends at{constructor(){super()}decodeFromVideoElement(t,e,r){const n=document.createElement("canvas");n.width=t.videoWidth,n.height=t.videoHeight;const i=n.getContext("2d");i.drawImage(t,0,0);const s=i.getImageData(0,0,n.width,n.height);try{const t=new l({width:n.width,height:n.height,data:s.data}),i=new z.DecodeHintType;i.setHint(z.DecodeHintType.POSSIBLE_FORMATS,[z.BARCODE_FORMAT.QR_CODE,z.BARCODE_FORMAT.CODE_128,z.BARCODE_FORMAT.CODE_39,z.BARCODE_FORMAT.CODE_93,z.BARCODE_FORMAT.CODABAR,z.BARCODE_FORMAT.EAN_13,z.BARCODE_FORMAT.EAN_8,z.BARCODE_FORMAT.UPC_A,z.BARCODE_FORMAT.UPC_E,z.BARCODE_FORMAT.ITF]),e&&e(this.decode(t))}catch(t){r&&r(t)}}decodeFromVideoCallback(t,e,r,n){const i=document.createElement("video");i.srcObject=t,i.setAttribute("playsinline",""),i.muted=!0,i.play();const s=this,o=()=>{if(!i.videoWidth)return void requestAnimationFrame(o);const t=document.createElement("canvas");t.width=i.videoWidth,t.height=i.videoHeight;const a=t.getContext("2d");a.drawImage(i,0,0);const h=a.getImageData(0,0,t.width,t.height);try{const t=new l({width:t.width,height:t.height,data:h.data}),a=new z.DecodeHintType;a.setHint(z.DecodeHintType.POSSIBLE_FORMATS,[z.BARCODE_FORMAT.QR_CODE,z.BARCODE_FORMAT.CODE_128,z.BARCODE_FORMAT.CODE_39,z.BARCODE_FORMAT.CODE_93,z.BARCODE_FORMAT.CODABAR,z.BARCODE_FORMAT.EAN_13,z.BARCODE_FORMAT.EAN_8,z.BARCODE_FORMAT.UPC_A,z.BARCODE_FORMAT.UPC_E,z.BARCODE_FORMAT.ITF]),e&&e(this.decode(t))}catch(t){n&&n(t)}requestAnimationFrame(o)};i.onloadedmetadata=()=>{o()}}const lt={BARCODE_FORMAT:G.BARCODE_FORMAT,DecodeHintType:G.DecodeHintType,Exception:Error,Reader:st,MultiFormatReader:ot,BrowserMultiFormatReader:at};for(const t in lt)Object.defineProperty(G,t,{value:lt[t]});for(const t in z)Object.defineProperty(G,t,{value:z[t]});"function"==typeof define&&define.amd?define(["exports"],(function(t){e(t)})):"function"==typeof module&&module.exports?module.exports=e():t.ZXing=e()}(this));    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@aspect-dev/zxing-wasm@0.20.0/dist/umd/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'JetBrains Mono', monospace; background: #fff; color: #111; min-height: 100vh; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; }
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        h1 { font-size: 18px; font-weight: 600; }
-        .version-badge { font-size: 10px; background: #f0f0f0; padding: 3px 8px; border-radius: 3px; color: #666; margin-left: 8px; }
-        .btn { background: #fff; border: 1px solid #111; padding: 7px 14px; font-family: inherit; font-size: 12px; cursor: pointer; }
-        .btn:hover { background: #f0f0f0; }
-        .tabs { display: flex; gap: 0; margin-bottom: 16px; }
-        .tab { flex: 1; padding: 10px; text-align: center; border: 1px solid #111; cursor: pointer; font-size: 12px; }
-        .tab.active { background: #111; color: #fff; }
-        .tab:not(.active) { background: #fff; }
-        .scanner-section { border: 1px solid #111; padding: 14px; margin-bottom: 14px; position: relative; display: none; }
-        .scanner-section.active { display: block; }
-        #reader { width: 100%; aspect-ratio: 1 / 1; max-height: 320px; position: relative; background: #111; overflow: hidden; }
-        #reader video { width: 100% !important; height: 100% !important; border-radius: 0; object-fit: cover; display: block; position: absolute; top: 0; left: 0; }
-        #reader video.bw-filter { filter: grayscale(100%) contrast(130%) brightness(105%); }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #0f0f0f;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ─── Header ─── */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #222;
+            background: #0f0f0f;
+        }
+        .header-title {
+            font-size: 17px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+        }
+        .header-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background: transparent;
+            color: #888;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+        .icon-btn:hover { border-color: #555; color: #fff; background: #1a1a1a; }
+        .icon-btn.active { background: #fff; color: #000; border-color: #fff; }
+        .version-badge {
+            font-size: 10px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 2px 7px;
+            border-radius: 4px;
+            color: #666;
+        }
+
+        /* ─── Tabs ─── */
+        .tabs {
+            display: flex;
+            background: #0f0f0f;
+            padding: 0 20px;
+            gap: 0;
+            border-bottom: 1px solid #222;
+        }
+        .tab {
+            flex: 1;
+            padding: 12px 8px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 500;
+            color: #555;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.15s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .tab.active { color: #fff; border-bottom-color: #fff; }
+        .tab:not(.active):hover { color: #aaa; }
+        .tab-icon { font-size: 18px; }
+        .tab-label { font-size: 11px; }
+
+        /* ─── Sections ─── */
+        .section { display: none; flex: 1; flex-direction: column; }
+        .section.active { display: flex; }
+
+        /* ─── Camera View ─── */
+        .camera-wrap {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4/3;
+            background: #000;
+            overflow: hidden;
+        }
+        .camera-wrap video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .camera-wrap video.bw {
+            filter: grayscale(1) contrast(1.3);
+        }
+
+        /* Scan overlay */
+        .scan-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+        .scan-frame {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70%;
+            height: 50%;
+            border: 2px solid rgba(255,255,255,0.7);
+            border-radius: 8px;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);
+        }
+        .scan-line {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ff88, transparent);
+            animation: scanMove 2s linear infinite;
+        }
+        @keyframes scanMove {
+            0% { top: 10%; opacity: 1; }
+            100% { top: 90%; opacity: 0; }
+        }
         .corner-tl, .corner-tr, .corner-bl, .corner-br {
             position: absolute;
             width: 20px; height: 20px;
-            border-color: #fff;
-            border-style: solid;
-            pointer-events: none;
-            z-index: 10;
+        }
+        .corner-tl { top: -2px; left: -2px; border-top: 3px solid #00ff88; border-left: 3px solid #00ff88; border-radius: 3px 0 0 0; }
+        .corner-tr { top: -2px; right: -2px; border-top: 3px solid #00ff88; border-right: 3px solid #00ff88; border-radius: 0 3px 0 0; }
+        .corner-bl { bottom: -2px; left: -2px; border-bottom: 3px solid #00ff88; border-left: 3px solid #00ff88; border-radius: 0 0 0 3px; }
+        .corner-br { bottom: -2px; right: -2px; border-bottom: 3px solid #00ff88; border-right: 3px solid #00ff88; border-radius: 0 0 3px 0; }
+
+        /* Status bar */
+        .status-bar {
+            padding: 8px 20px;
+            font-size: 11px;
+            color: #555;
+            background: #0f0f0f;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-height: 32px;
+        }
+        .status-bar .dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: #333;
+        }
+        .status-bar .dot.live { background: #00ff88; box-shadow: 0 0 6px #00ff88; }
+        .status-bar .dot.error { background: #ff4444; }
+        .status-bar.error { color: #ff4444; }
+
+        /* ─── Result Card ─── */
+        .result-card {
+            margin: 16px 20px;
+            border-radius: 12px;
+            overflow: hidden;
             display: none;
         }
-        .corner-tl { top: 15%; left: 15%; border-width: 3px 0 0 3px; }
-        .corner-tr { top: 15%; right: 15%; border-width: 3px 3px 0 0; }
-        .corner-bl { bottom: 15%; left: 15%; border-width: 0 0 3px 3px; }
-        .corner-br { bottom: 15%; right: 15%; border-width: 0 3px 3px 0; }
-        .corner-tl, .corner-tr, .corner-bl, .corner-br { display: none; }
-        .result-box { background: #f5f5f5; padding: 10px; margin-top: 10px; font-size: 13px; word-break: break-all; }
-        .result-box.success { background: #d4edda; }
-        .result-box.duplicate { background: #fff3cd; }
-        .result-box.error { background: #f8d7da; }
-        .camera-status { font-size: 11px; color: #888; margin-top: 8px; min-height: 16px; }
-        .camera-status.error { color: #c00; }
-        .camera-status.success { color: #060; }
-        .controls { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; padding: 12px; border: 1px solid #111; }
-        .control-row { display: flex; align-items: center; gap: 12px; }
-        .control-row label { font-size: 12px; min-width: 60px; }
-        .flash-btn { padding: 6px 12px; border: 1px solid #111; font-family: inherit; font-size: 11px; cursor: pointer; background: #fff; display: flex; align-items: center; gap: 4px; }
-        .flash-btn.on { background: #ff0; color: #111; border-color: #cc0; }
-        .flash-btn:hover { background: #f0f0f0; }
-        .flash-btn.on:hover { background: #dd0; }
-        .bw-toggle { display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; }
-        .bw-toggle input { cursor: pointer; }
-        .capture-btn { margin-top: 12px; width: 100%; padding: 12px; background: #111; color: #fff; border: none; font-family: inherit; font-size: 13px; cursor: pointer; font-weight: 600; }
-        .capture-btn:hover { background: #333; }
-        .capture-btn:disabled { background: #ccc; cursor: not-allowed; }
-        .upload-section { display: none; }
-        .upload-section.active { display: block; }
-        .file-input { width: 100%; padding: 10px; border: 1px solid #111; font-family: inherit; font-size: 12px; }
-        #upload-preview { max-width: 100%; margin-top: 10px; display: none; }
-        .history-section { margin-top: 20px; }
-        .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .history-header h2 { font-size: 13px; font-weight: 600; }
-        .history-list { border: 1px solid #111; max-height: 280px; overflow-y: auto; }
-        .history-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: flex-start; }
+        .result-card.show { display: block; }
+        .result-card.success { background: #0a1f0a; border: 1px solid #00ff8833; }
+        .result-card.error { background: #1f0a0a; border: 1px solid #ff444433; }
+        .result-card.warning { background: #1f1a0a; border: 1px solid #ffaa0033; }
+        .result-card-header {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #ffffff10;
+        }
+        .result-card-header .type-badge {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: #00ff8822;
+            color: #00ff88;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .result-card-header .close-btn {
+            background: none;
+            border: none;
+            color: #555;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0;
+            line-height: 1;
+        }
+        .result-card-header .close-btn:hover { color: #fff; }
+        .result-card-body {
+            padding: 14px 16px;
+            font-size: 15px;
+            font-weight: 500;
+            word-break: break-all;
+            color: #e0e0e0;
+        }
+        .result-card-body .sub {
+            font-size: 11px;
+            color: #666;
+            margin-top: 4px;
+            font-weight: 400;
+        }
+
+        /* ─── Controls ─── */
+        .controls {
+            padding: 16px 20px;
+            display: flex;
+            gap: 8px;
+            background: #0f0f0f;
+            flex-wrap: wrap;
+        }
+        .ctrl-btn {
+            flex: 1;
+            min-width: 80px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background: #1a1a1a;
+            color: #888;
+            font-size: 12px;
+            font-family: inherit;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            transition: all 0.15s;
+        }
+        .ctrl-btn:hover { border-color: #555; color: #fff; }
+        .ctrl-btn.on { background: #00ff88; color: #000; border-color: #00ff88; }
+        .ctrl-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* ─── Capture Button ─── */
+        .capture-wrap {
+            padding: 0 20px 20px;
+            background: #0f0f0f;
+        }
+        .capture-btn {
+            width: 100%;
+            padding: 16px;
+            border-radius: 12px;
+            border: none;
+            background: #fff;
+            color: #000;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.15s;
+        }
+        .capture-btn:hover { background: #e8e8e8; }
+        .capture-btn:active { transform: scale(0.98); }
+        .capture-btn:disabled { background: #333; color: #666; cursor: not-allowed; transform: none; }
+
+        /* ─── Upload Section ─── */
+        .upload-area {
+            margin: 20px;
+            border: 2px dashed #333;
+            border-radius: 16px;
+            padding: 32px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .upload-area:hover { border-color: #555; background: #111; }
+        .upload-icon { font-size: 36px; margin-bottom: 10px; }
+        .upload-text { font-size: 14px; color: #666; }
+        .upload-text span { color: #00ff88; }
+        .upload-preview {
+            max-width: 100%;
+            border-radius: 8px;
+            margin: 16px 20px 0;
+            display: none;
+        }
+        .upload-preview.show { display: block; }
+
+        /* ─── History ─── */
+        .history-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #1a1a1a;
+        }
+        .history-header h2 { font-size: 13px; font-weight: 600; color: #aaa; }
+        .history-clear {
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 11px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .history-clear:hover { color: #ff4444; }
+        .history-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+        .history-item {
+            padding: 14px 20px;
+            border-bottom: 1px solid #1a1a1a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
         .history-item:last-child { border-bottom: none; }
-        .history-item .info { flex: 1; }
-        .history-item .value { font-size: 12px; font-weight: 600; word-break: break-all; }
-        .history-item .meta { font-size: 10px; color: #666; margin-top: 3px; }
-        .history-item .delete-btn { background: none; border: none; cursor: pointer; font-size: 15px; padding: 3px; color: #aaa; }
-        .history-item .delete-btn:hover { color: #111; }
-        .empty-state { padding: 28px; text-align: center; color: #aaa; font-size: 12px; }
-        .hidden { display: none; }
-        .ocr-suggestions { margin-top: 8px; }
-        .ocr-suggestions p { font-size: 11px; color: #555; margin-bottom: 6px; }
-        .ocr-candidates { display: flex; flex-direction: column; gap: 4px; }
-        .ocr-candidate { display: flex; align-items: center; gap: 8px; }
-        .ocr-candidate span { font-size: 12px; font-weight: 600; }
-        .ocr-use-btn { background: #111; color: #fff; border: none; padding: 4px 10px; font-size: 11px; cursor: pointer; font-family: inherit; }
-        .ocr-use-btn:hover { background: #444; }
-        .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #ddd; }
-        .changelog-toggle { font-size: 11px; color: #888; cursor: pointer; display: flex; align-items: center; gap: 6px; user-select: none; }
-        .changelog-toggle:hover { color: #111; }
-        .changelog { display: none; margin-top: 10px; font-size: 11px; color: #555; line-height: 1.6; }
-        .changelog.visible { display: block; }
-        .changelog-item { margin-bottom: 8px; padding-left: 8px; border-left: 2px solid #ddd; }
-        .changelog-item strong { color: #111; }
-        #scan-result, #ocr-result, #upload-result { display: none; }
-        #scan-result.active, #ocr-result.active, #upload-result.active { display: block; }
-        .ocr-preview { max-width: 100%; margin-top: 10px; display: none; border: 1px solid #111; }
+        .history-item .value { font-size: 13px; font-weight: 500; word-break: break-all; }
+        .history-item .meta { font-size: 10px; color: #444; margin-top: 3px; }
+        .history-item .del-btn {
+            background: none;
+            border: none;
+            color: #333;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0 4px;
+            flex-shrink: 0;
+        }
+        .history-item .del-btn:hover { color: #ff4444; }
+        .history-empty {
+            padding: 40px 20px;
+            text-align: center;
+            color: #333;
+            font-size: 12px;
+        }
+
+        /* ─── Toast ─── */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: #222;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 24px;
+            font-size: 12px;
+            font-weight: 500;
+            z-index: 100;
+            transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast.success { background: #0a2f0a; border: 1px solid #00ff8844; color: #00ff88; }
+        .toast.error { background: #2f0a0a; border: 1px solid #ff444444; color: #ff6666; }
+
+        /* ─── Changelog ─── */
+        .changelog {
+            padding: 16px 20px;
+            border-top: 1px solid #1a1a1a;
+        }
+        .changelog-toggle {
+            font-size: 11px;
+            color: #444;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            user-select: none;
+        }
+        .changelog-toggle:hover { color: #666; }
+        .changelog-content { display: none; margin-top: 10px; font-size: 11px; color: #555; line-height: 1.7; }
+        .changelog-content.visible { display: block; }
+        .changelog-item { margin-bottom: 6px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div style="display:flex;align-items:center">
-                <h1>Barcode Scanner</h1>
-                <span class="version-badge" id="versionBadge">v3.0.0</span>
-            </div>
-            <button class="btn" id="exportBtn">Export TXT</button>
-        </header>
 
-        <div class="tabs">
-            <div class="tab active" data-tab="scan">📷 Scan</div>
-            <div class="tab" data-tab="ocr">📝 OCR</div>
-            <div class="tab" data-tab="upload">🖼️ Upload</div>
-        </div>
+<!-- Header -->
+<div class="header">
+    <div class="header-title">Barcode Scanner</div>
+    <div class="header-actions">
+        <span class="version-badge" id="versionBadge">v4.0.0</span>
+        <button class="icon-btn" id="exportBtn" title="Export history">📥</button>
+    </div>
+</div>
 
-        <!-- SCAN tab: auto-detect barcode/QR, no capture button -->
-        <div class="scanner-section scan-section active">
-            <div id="reader">
+<!-- Tabs -->
+<div class="tabs">
+    <div class="tab active" data-tab="scan">
+        <span class="tab-icon">📷</span>
+        <span class="tab-label">Scan</span>
+    </div>
+    <div class="tab" data-tab="ocr">
+        <span class="tab-icon">📝</span>
+        <span class="tab-label">OCR</span>
+    </div>
+    <div class="tab" data-tab="upload">
+        <span class="tab-icon">🖼️</span>
+        <span class="tab-label">Upload</span>
+    </div>
+</div>
+
+<!-- SCAN section -->
+<div class="section scan-section active" id="scanSection">
+    <div class="camera-wrap" id="scanCameraWrap">
+        <video id="scanVideo" autoplay playsinline muted></video>
+        <div class="scan-overlay">
+            <div class="scan-frame">
+                <div class="scan-line" id="scanLine"></div>
                 <div class="corner-tl"></div>
                 <div class="corner-tr"></div>
                 <div class="corner-bl"></div>
                 <div class="corner-br"></div>
-            </div>
-            <div id="cameraStatus" class="camera-status"></div>
-            <div id="scan-result" class="result-box"></div>
-            <div class="controls">
-                <div class="control-row">
-                    <label>Flash</label>
-                    <button class="flash-btn" id="flashBtn">🔦 Flash</button>
-                </div>
-                <div class="control-row">
-                    <label>B&amp;W</label>
-                    <label class="bw-toggle">
-                        <input type="checkbox" id="bwToggle" checked>
-                        <span>Grayscale + Contrast</span>
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <!-- OCR tab: capture button, then OCR -->
-        <div class="scanner-section ocr-section">
-            <div id="ocr-reader">
-                <div class="corner-tl"></div>
-                <div class="corner-tr"></div>
-                <div class="corner-bl"></div>
-                <div class="corner-br"></div>
-            </div>
-            <div id="ocrCameraStatus" class="camera-status"></div>
-            <div class="controls">
-                <div class="control-row">
-                    <label>Flash</label>
-                    <button class="flash-btn" id="ocrFlashBtn">🔦 Flash</button>
-                </div>
-                <div class="control-row">
-                    <label>B&amp;W</label>
-                    <label class="bw-toggle">
-                        <input type="checkbox" id="ocrBwToggle" checked>
-                        <span>Grayscale + Contrast</span>
-                    </label>
-                </div>
-            </div>
-            <button class="capture-btn" id="ocrCaptureBtn">📸 Capture &amp; Read Text</button>
-            <img id="ocr-preview" class="ocr-preview" alt="Captured frame">
-            <div id="ocr-result" class="result-box"></div>
-        </div>
-
-        <!-- Upload tab -->
-        <div class="scanner-section upload-section">
-            <input type="file" id="fileInput" class="file-input" accept="image/*">
-            <img id="upload-preview" alt="Preview">
-            <div id="upload-result" class="result-box"></div>
-        </div>
-
-        <div class="history-section">
-            <div class="history-header">
-                <h2>History</h2>
-                <button class="btn" id="clearAllBtn">Clear All</button>
-            </div>
-            <div class="history-list" id="historyList">
-                <div class="empty-state">No scanned items yet</div>
-            </div>
-        </div>
-
-        <div class="footer">
-            <div class="changelog-toggle" onclick="document.getElementById('changelog').classList.toggle('visible')">
-                ▼ <span id="changelogLabel">Changelog v3.0.0</span>
-            </div>
-            <div class="changelog" id="changelog">
-                <div class="changelog-item"><strong>v3.0.0</strong> — 3 tabs: Scan (auto barcode/QR) / OCR (capture) / Upload. Removed format selector. OCR supports EN/numbers/symbols with -_ and max 2-space grouping.</div>
-                <div class="changelog-item"><strong>v2.2.0</strong> — UI: square camera frame, corner bracket overlay, All Formats auto-detect.</div>
-                <div class="changelog-item"><strong>v2.0.0</strong> — Replaced html5-qrcode with @zxing/library for barcode decoding.</div>
             </div>
         </div>
     </div>
+    <div class="status-bar" id="scanStatus">
+        <span class="dot" id="scanDot"></span>
+        <span id="scanStatusText">Initializing camera...</span>
+    </div>
+    <div class="result-card" id="scanResult">
+        <div class="result-card-header">
+            <span class="type-badge" id="scanTypeBadge">BARCODE</span>
+            <button class="close-btn" onclick="dismissScanResult()">×</button>
+        </div>
+        <div class="result-card-body" id="scanResultText"></div>
+    </div>
+    <div class="controls">
+        <button class="ctrl-btn" id="scanFlashBtn">🔦 Flash</button>
+        <button class="ctrl-btn" id="scanBwBtn">B&amp;W</button>
+    </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-    <script>
-const VERSION = '3.0.0';
-const STORAGE_KEY = 'barcode_history_v3';
-const SCAN_COOLDOWN_MS = 5000;
-const OCR_BOX_W = 250;
-const OCR_BOX_H = 150;
-const FORMAT_STABILITY_THRESHOLD = 3;
-const SESSION_COOLDOWN_MS = 3000;
+<!-- OCR section -->
+<div class="section ocr-section" id="ocrSection">
+    <div class="camera-wrap" id="ocrCameraWrap">
+        <video id="ocrVideo" autoplay playsinline muted></video>
+        <div class="scan-overlay">
+            <div class="scan-frame">
+                <div class="scan-line"></div>
+                <div class="corner-tl"></div>
+                <div class="corner-tr"></div>
+                <div class="corner-bl"></div>
+                <div class="corner-br"></div>
+            </div>
+        </div>
+    </div>
+    <div class="status-bar" id="ocrStatus">
+        <span class="dot" id="ocrDot"></span>
+        <span id="ocrStatusText">Initializing camera...</span>
+    </div>
+    <div class="result-card" id="ocrResult">
+        <div class="result-card-header">
+            <span class="type-badge">TEXT</span>
+            <button class="close-btn" onclick="dismissOcrResult()">×</button>
+        </div>
+        <div class="result-card-body" id="ocrResultText"></div>
+    </div>
+    <img id="ocrPreview" class="upload-preview" alt="Captured">
+    <div class="controls">
+        <button class="ctrl-btn" id="ocrFlashBtn">🔦 Flash</button>
+        <button class="ctrl-btn" id="ocrBwBtn">B&amp;W</button>
+    </div>
+    <div class="capture-wrap">
+        <button class="capture-btn" id="ocrCaptureBtn" disabled>
+            📸 Capture &amp; Read Text
+        </button>
+    </div>
+</div>
 
-let scanReader = null;
-let ocrReader = null;
+<!-- Upload section -->
+<div class="section upload-section" id="uploadSection">
+    <input type="file" id="fileInput" accept="image/*" style="display:none">
+    <div class="upload-area" id="uploadArea">
+        <div class="upload-icon">🖼️</div>
+        <div class="upload-text">Tap to select image or <span>browse</span></div>
+    </div>
+    <img id="uploadPreview" class="upload-preview" alt="Preview">
+    <div class="result-card" id="uploadResult">
+        <div class="result-card-header">
+            <span class="type-badge" id="uploadTypeBadge">RESULT</span>
+            <button class="close-btn" onclick="dismissUploadResult()">×</button>
+        </div>
+        <div class="result-card-body" id="uploadResultText"></div>
+    </div>
+</div>
+
+<!-- History (shared) -->
+<div class="history-section" id="historySection">
+    <div class="history-header">
+        <h2>History</h2>
+        <button class="history-clear" id="clearHistoryBtn">Clear all</button>
+    </div>
+    <div class="history-list" id="historyList">
+        <div class="history-empty">No scanned items yet</div>
+    </div>
+</div>
+
+<!-- Changelog -->
+<div class="changelog">
+    <div class="changelog-toggle" onclick="document.getElementById('changelogContent').classList.toggle('visible')">
+        ▼ <span id="changelogLabel">Changelog v4.0.0</span>
+    </div>
+    <div class="changelog-content" id="changelogContent">
+        <div class="changelog-item"><strong>v4.0.0</strong> — Complete rewrite: fast camera init, auto-detect barcode/QR, OCR capture with enhanced contrast, dark professional UI.</div>
+        <div class="changelog-item"><strong>v3.0.0</strong> — 3 tabs: Scan/OCR/Upload.</div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════
+const VERSION = '4.0.0';
+const STORAGE_KEY = 'barcode_v4_history';
+const HISTORY_MAX = 200;
+
+const ALL_FORMATS = [
+    ZXing.BarcodeFormat.QR_CODE,
+    ZXing.BarcodeFormat.CODE_128,
+    ZXing.BarcodeFormat.CODE_39,
+    ZXing.BarcodeFormat.CODE_93,
+    ZXing.BarcodeFormat.CODABAR,
+    ZXing.BarcodeFormat.EAN_13,
+    ZXing.BarcodeFormat.EAN_8,
+    ZXing.BarcodeFormat.UPC_A,
+    ZXing.BarcodeFormat.UPC_E,
+    ZXing.BarcodeFormat.ITF
+];
+
+// ═══════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════
+let currentTab = 'scan';
 let scanStream = null;
 let ocrStream = null;
-let scanLastValue = '';
-let scanLastTime = 0;
-let scanSessionCandidates = {};
+let scanReader = null;
 let bwEnabled = true;
 let flashEnabled = false;
-let currentTab = 'scan';
+let lastScannedValue = '';
+let lastScannedTime = 0;
+const SCAN_COOLDOWN_MS = 3000;
 
-// OCR post-processing: EN + numbers + symbols, -_ kept, max 2 spaces = one gap
+// ═══════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════
+document.getElementById('versionBadge').textContent = `v${VERSION}`;
+document.getElementById('changelogLabel').textContent = `Changelog v${VERSION}`;
+renderHistory();
+
+// Tab switching
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', async () => {
+        const target = tab.dataset.tab;
+        if (target === currentTab) return;
+        switchTab(target);
+    });
+});
+
+// Start scan camera on load
+initScanCamera();
+
+// ═══════════════════════════════════════
+//  TAB SWITCHING
+// ═══════════════════════════════════════
+async function switchTab(target) {
+    // Stop current camera
+    if (currentTab === 'scan') stopCameraStream();
+    if (currentTab === 'ocr') stopOcrStream();
+
+    // Update UI
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelector(`.${target}-section`).classList.add('active');
+    document.querySelector(`[data-tab="${target}"]`).classList.add('active');
+
+    const prevTab = currentTab;
+    currentTab = target;
+
+    // Start appropriate camera
+    if (target === 'scan') await initScanCamera();
+    else if (target === 'ocr') await initOcrCamera();
+}
+
+function setStatus(text, type, elId, dotId) {
+    const el = elId ? document.getElementById(elId) : document.getElementById('scanStatusText');
+    const dot = dotId ? document.getElementById(dotId) : document.getElementById('scanDot');
+    if (el) el.textContent = text;
+    if (dot) {
+        dot.className = 'dot';
+        if (type === 'success') dot.classList.add('live');
+        else if (type === 'error') dot.classList.add('error');
+    }
+    const statusBar = document.getElementById(target === 'scan' ? 'scanStatus' : 'ocrStatus');
+    if (statusBar) {
+        statusBar.className = 'status-bar' + (type === 'error' ? ' error' : '');
+    }
+}
+
+// ═══════════════════════════════════════
+//  CAMERA — SCAN
+// ═══════════════════════════════════════
+async function initScanCamera() {
+    const video = document.getElementById('scanVideo');
+    video.srcObject = null;
+    setStatus('Requesting camera...', '', 'scanStatusText', 'scanDot');
+
+    try {
+        // Request camera
+        scanStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 }
+        }});
+        video.srcObject = scanStream;
+        await video.play();
+
+        // Apply B&W
+        video.classList.toggle('bw', bwEnabled);
+
+        setStatus('Ready — point at barcode', 'success', 'scanStatusText', 'scanDot');
+
+        // Start barcode scanning
+        startBarcodeScanning(video);
+
+    } catch (err) {
+        console.error('Camera error:', err);
+        if (err.name === 'NotFoundError') setStatus('Camera not found', 'error', 'scanStatusText', 'scanDot');
+        else if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') setStatus('Permission denied', 'error', 'scanStatusText', 'scanDot');
+        else if (err.name === 'NotReadableError') setStatus('Camera in use', 'error', 'scanStatusText', 'scanDot');
+        else setStatus('Camera error', 'error', 'scanStatusText', 'scanDot');
+    }
+}
+
+function startBarcodeScanning(video) {
+    // Clean up old reader
+    if (scanReader) {
+        try { scanReader.reset(); } catch(e) {}
+        scanReader = null;
+    }
+
+    const hints = new Map();
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, ALL_FORMATS);
+    scanReader = new ZXing.BrowserMultiFormatReader(hints);
+
+    scanReader.decodeFromVideoElement(video, (text, result) => {
+        if (!text) return;
+        const now = Date.now();
+        const fmt = result?.result?.format?.formatName || 'barcode';
+
+        // Dedup
+        if (text === lastScannedValue && (now - lastScannedTime < SCAN_COOLDOWN_MS)) return;
+
+        lastScannedValue = text;
+        lastScannedTime = now;
+
+        // Animate scan line
+        const scanLine = document.getElementById('scanLine');
+        if (scanLine) {
+            scanLine.style.animation = 'none';
+            scanLine.offsetHeight; // reflow
+            scanLine.style.animation = 'scanMove 0.4s ease-out';
+        }
+
+        showScanResult(text, fmt);
+        addToHistory(text, fmt);
+
+    }, (err) => {
+        // Silent failure — continuous scanning
+    });
+}
+
+function showScanResult(text, format) {
+    const card = document.getElementById('scanResult');
+    const badge = document.getElementById('scanTypeBadge');
+    const body = document.getElementById('scanResultText');
+
+    badge.textContent = format;
+    body.textContent = text;
+    body.innerHTML += `<div class="sub">${format} · just now</div>`;
+    card.className = 'result-card show success';
+}
+
+function dismissScanResult() {
+    document.getElementById('scanResult').classList.remove('show');
+}
+
+function stopCameraStream() {
+    if (scanStream) {
+        scanStream.getTracks().forEach(t => t.stop());
+        scanStream = null;
+    }
+    if (scanReader) {
+        try { scanReader.reset(); } catch(e) {}
+        scanReader = null;
+    }
+}
+
+// ═══════════════════════════════════════
+//  CAMERA — OCR
+// ═══════════════════════════════════════
+async function initOcrCamera() {
+    const video = document.getElementById('ocrVideo');
+    video.srcObject = null;
+    setStatus('Requesting camera...', '', 'ocrStatusText', 'ocrDot');
+    document.getElementById('ocrCaptureBtn').disabled = true;
+
+    try {
+        ocrStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 }
+        }});
+        video.srcObject = ocrStream;
+        await video.play();
+
+        video.classList.toggle('bw', bwEnabled);
+        setStatus('Ready — frame your text', 'success', 'ocrStatusText', 'ocrDot');
+        document.getElementById('ocrCaptureBtn').disabled = false;
+
+    } catch (err) {
+        console.error('OCR camera error:', err);
+        if (err.name === 'NotFoundError') setStatus('Camera not found', 'error', 'ocrStatusText', 'ocrDot');
+        else if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') setStatus('Permission denied', 'error', 'ocrStatusText', 'ocrDot');
+        else setStatus('Camera error', 'error', 'ocrStatusText', 'ocrDot');
+    }
+}
+
+function stopOcrStream() {
+    if (ocrStream) {
+        ocrStream.getTracks().forEach(t => t.stop());
+        ocrStream = null;
+    }
+    const video = document.getElementById('ocrVideo');
+    if (video) video.srcObject = null;
+}
+
+// ═══════════════════════════════════════
+//  OCR CAPTURE
+// ═══════════════════════════════════════
+document.getElementById('ocrCaptureBtn').addEventListener('click', async () => {
+    const video = document.getElementById('ocrVideo');
+    const btn = document.getElementById('ocrCaptureBtn');
+    const resultCard = document.getElementById('ocrResult');
+    const preview = document.getElementById('ocrPreview');
+
+    if (!video || !video.videoWidth) {
+        showToast('Camera not ready', 'error');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Reading...';
+    resultCard.classList.remove('show');
+
+    try {
+        // Capture full frame
+        const vw = video.videoWidth;
+        const vh = video.videoHeight;
+        const canvas = document.createElement('canvas');
+        canvas.width = vw;
+        canvas.height = vh;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0);
+
+        // Crop center region
+        const cropW = Math.round(vw * 0.7);
+        const cropH = Math.round(vh * 0.35);
+        const cropX = Math.round((vw - cropW) / 2);
+        const cropY = Math.round((vh - cropH) / 2);
+
+        const cropCanvas = document.createElement('canvas');
+        cropCanvas.width = cropW;
+        cropCanvas.height = cropH;
+        const cropCtx = cropCanvas.getContext('2d');
+        cropCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
+        // Show preview
+        preview.src = cropCanvas.toDataURL('image/png');
+        preview.classList.add('show');
+
+        // Enhance contrast
+        const imgData = cropCtx.getImageData(0, 0, cropW, cropH);
+        const data = imgData.data;
+        for (let i = 0; i < data.length; i += 4) {
+            const gray = data[i] * 0.299 + data[i+1] * 0.587 + data[i+2] * 0.114;
+            const enhanced = Math.min(255, Math.max(0, ((gray - 128) * 1.8) + 128));
+            data[i] = data[i+1] = data[i+2] = enhanced;
+        }
+        cropCtx.putImageData(imgData, 0, 0);
+
+        // OCR
+        const result = await Tesseract.recognize(
+            cropCanvas.toDataURL('image/png'),
+            'eng',
+            { logger: m => {
+                if (m.status === 'recognizing text') {
+                    btn.textContent = `⏳ ${Math.round(m.progress * 100)}%`;
+                }
+            }}
+        );
+
+        const raw = (result.data.text || '').trim();
+        const lines = processOcrText(raw);
+
+        if (lines.length === 0 || !raw) {
+            showOcrResult('No text detected. Try again.', 'error');
+        } else {
+            // Show candidates
+            showOcrCandidates(lines);
+        }
+
+    } catch(err) {
+        console.error('OCR error:', err);
+        showOcrResult('OCR failed: ' + (err.message || 'unknown'), 'error');
+    }
+
+    btn.disabled = false;
+    btn.textContent = '📸 Capture & Read Text';
+});
+
 function processOcrText(text) {
-    // Filter: keep only valid chars (A-Z, a-z, 0-9, -_.  and collapse multiple spaces)
+    if (!text) return [];
     const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-    if (lines.length === 0) return [];
-
     const result = [];
     for (const line of lines) {
-        // Collapse 2+ spaces into single space
+        // Collapse 2+ spaces to 1
         const collapsed = line.replace(/ {2,}/g, ' ');
-        // Keep only valid chars
-        const cleaned = collapsed.replace(/[^A-Za-z0-9_\- ]/g, '');
-        if (cleaned.length > 0) {
+        // Keep only valid chars: A-Z a-z 0-9 - _ space
+        const cleaned = collapsed.replace(/[^A-Za-z0-9_\- ]/g, '').trim();
+        if (cleaned.length > 0 && cleaned.length >= 2) {
             result.push(cleaned);
         }
     }
     return result;
 }
 
-function setStatus(msg, type, targetEl) {
-    const el = document.getElementById(targetEl || 'cameraStatus');
-    el.textContent = msg;
-    el.className = 'camera-status' + (type ? ' ' + type : '');
+function showOcrResult(text, type) {
+    const card = document.getElementById('ocrResult');
+    const body = document.getElementById('ocrResultText');
+    card.className = 'result-card show ' + type;
+    body.textContent = text;
 }
 
-function normalizeError(e) {
-    if (typeof e === 'string') return e;
-    if (typeof e === 'undefined') return 'Unknown error (undefined)';
-    if (e === null) return 'Unknown error (null)';
-    if (e instanceof Event || typeof e.type === 'string') {
-        return 'Image load failed: ' + (e.type || 'unknown Event');
+function showOcrCandidates(lines) {
+    const card = document.getElementById('ocrResult');
+    const body = document.getElementById('ocrResultText');
+    card.className = 'result-card show success';
+
+    if (lines.length === 1) {
+        // Single result — auto-select
+        const selected = lines[0];
+        body.innerHTML = `${escapeHtml(selected)}<div class="sub">text · just now</div>`;
+        addToHistory(selected, 'text');
+    } else {
+        body.innerHTML = '<div style="font-size:12px;color:#666;margin-bottom:10px">📝 Tap to use:</div>';
+        lines.forEach(line => {
+            const safe = line.replace(/'/g, "\\'");
+            body.innerHTML += `
+                <div style="padding:8px 0;border-bottom:1px solid #ffffff10;display:flex;justify-content:space-between;align-items:center">
+                    <span style="font-size:14px;font-weight:500">${escapeHtml(line)}</span>
+                    <button onclick="useOcrCandidate('${safe}')" style="background:#00ff8822;color:#00ff88;border:1px solid #00ff8844;padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">Use</button>
+                </div>`;
+        });
     }
-    if (e.message) return e.message;
-    return String(e);
 }
 
-function getAllFormats() {
-    return [
-        ZXing.BarcodeFormat.QR_CODE,
-        ZXing.BarcodeFormat.CODE_128,
-        ZXing.BarcodeFormat.CODE_39,
-        ZXing.BarcodeFormat.CODE_93,
-        ZXing.BarcodeFormat.CODABAR,
-        ZXing.BarcodeFormat.EAN_13,
-        ZXing.BarcodeFormat.EAN_8,
-        ZXing.BarcodeFormat.UPC_A,
-        ZXing.BarcodeFormat.UPC_E,
-        ZXing.BarcodeFormat.ITF
-    ];
+function useOcrCandidate(text) {
+    showOcrResult(`✅ ${text}`, 'success');
+    addToHistory(text, 'text');
+    document.getElementById('ocrPreview').classList.remove('show');
 }
 
-function clearSessionCandidates() { scanSessionCandidates = {}; }
-
-function addSessionCandidate(value, format) {
-    if (!scanSessionCandidates[value]) {
-        scanSessionCandidates[value] = { format, count: 0, firstSeen: Date.now() };
-    }
-    scanSessionCandidates[value].count++;
+function dismissOcrResult() {
+    document.getElementById('ocrResult').classList.remove('show');
 }
 
-function getStableResult() {
-    const entries = Object.entries(scanSessionCandidates);
-    const stable = entries.filter(([v, d]) => d.count >= FORMAT_STABILITY_THRESHOLD);
-    if (stable.length > 0) {
-        stable.sort((a, b) => b[1].count - a[1].count);
-        return { value: stable[0][0], format: stable[0][1].format, confidence: 'stable' };
-    }
-    if (entries.length > 0) {
-        entries.sort((a, b) => b[1].count - a[1].count);
-        return { value: entries[0][0], format: entries[0][1].format, confidence: 'unstable' };
-    }
-    return null;
-}
+// ═══════════════════════════════════════
+//  FLASH & B&W CONTROLS
+// ═══════════════════════════════════════
+document.getElementById('scanFlashBtn').addEventListener('click', () => toggleFlash('scan'));
+document.getElementById('ocrFlashBtn').addEventListener('click', () => toggleFlash('ocr'));
+document.getElementById('scanBwBtn').addEventListener('click', () => toggleBw('scan'));
+document.getElementById('ocrBwBtn').addEventListener('click', () => toggleBw('ocr'));
 
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-function showScanResult(value, format, success) {
-    const el = document.getElementById('scan-result');
-    el.textContent = success ? `✓ ${value} (${format})` : `${value} (${format})`;
-    el.classList.remove('hidden', 'duplicate', 'error');
-    el.classList.toggle('success', !!success);
-    el.classList.add('active');
-}
-
-function showFormatCandidates(value, format) {
-    const el = document.getElementById('scan-result');
-    const candidates = Object.entries(scanSessionCandidates)
-        .sort((a, b) => b[1].count - a[1].count)
-        .map(([v, d]) => `<div class="ocr-candidate"><span>${escapeHtml(v)}</span><span style="color:#888;font-size:10px">${d.format} ×${d.count}</span><button class="ocr-use-btn" onclick="useScanCandidate('${v.replace(/'/g, "\\'")}', '${d.format}')">Use</button></div>`)
-        .join('');
-    el.className = 'result-box';
-    el.innerHTML = `<p style="font-size:12px;color:#555;margin-bottom:8px">🔍 Multiple possibilities — tap to confirm:</p><div class="ocr-candidates">${candidates}</div>`;
-    el.classList.add('active');
-}
-
-function useScanCandidate(value, format) {
-    showScanResult(value, format, true);
-    addToHistory(value, format);
-    clearSessionCandidates();
-}
-
-function toggleFlash(stream) {
+function toggleFlash(tab) {
     flashEnabled = !flashEnabled;
-    const btns = [document.getElementById('flashBtn'), document.getElementById('ocrFlashBtn')];
-    btns.forEach(btn => {
-        if (btn) {
-            btn.classList.toggle('on', flashEnabled);
-            btn.textContent = flashEnabled ? '🔦 ON' : '🔦 Flash';
-        }
-    });
+    const streams = { scan: scanStream, ocr: ocrStream };
+    const btns = { scan: 'scanFlashBtn', ocr: 'ocrFlashBtn' };
+
+    document.getElementById(btns[tab]).classList.toggle('on', flashEnabled);
+
+    const stream = streams[tab];
     if (stream) {
         const track = stream.getVideoTracks()[0];
         if (track && 'applyConstraints' in track) {
@@ -335,339 +922,125 @@ function toggleFlash(stream) {
     }
 }
 
-function toggleBW(enabled, videoId) {
-    bwEnabled = enabled;
-    const v = document.getElementById(videoId || 'camVideo');
-    if (v) v.classList.toggle('bw-filter', enabled);
+function toggleBw(tab) {
+    bwEnabled = !bwEnabled;
+    const videoId = tab === 'scan' ? 'scanVideo' : 'ocrVideo';
+    const btnId = tab === 'scan' ? 'scanBwBtn' : 'ocrBwBtn';
+    document.getElementById(videoId).classList.toggle('bw', bwEnabled);
+    document.getElementById(btnId).classList.toggle('on', !bwEnabled);
 }
 
-// --- Tab switching ---
-document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', async () => {
-        const target = tab.dataset.tab;
-        if (target === currentTab) return;
+// Init B&W button states
+document.getElementById('scanBwBtn').classList.toggle('on', !bwEnabled);
+document.getElementById('ocrBwBtn').classList.toggle('on', !bwEnabled);
 
-        // Stop current camera
-        await stopCamera(currentTab);
+// ═══════════════════════════════════════
+//  UPLOAD
+// ═══════════════════════════════════════
+const uploadArea = document.getElementById('uploadArea');
+const fileInput = document.getElementById('fileInput');
 
-        // Switch tab
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.scanner-section').forEach(s => s.classList.remove('active'));
-        tab.classList.add('active');
-        document.querySelector(`.${target}-section`).classList.add('active');
-        currentTab = target;
-
-        // Start new camera
-        if (target === 'scan') await startScanCamera();
-        else if (target === 'ocr') await startOcrCamera();
-    });
-});
-
-document.getElementById('flashBtn').addEventListener('click', () => toggleFlash(scanStream));
-document.getElementById('ocrFlashBtn').addEventListener('click', () => toggleFlash(ocrStream));
-document.getElementById('bwToggle').addEventListener('change', (e) => toggleBW(e.checked, 'scanVideo'));
-document.getElementById('ocrBwToggle').addEventListener('change', (e) => toggleBW(e.checked, 'ocrVideo'));
-
-async function stopCamera(tab) {
-    if (tab === 'scan' && scanReader) {
-        try { scanReader.reset(); } catch(e) {}
-        scanReader = null;
-        if (scanStream) {
-            scanStream.getTracks().forEach(t => t.stop());
-            scanStream = null;
-        }
-    }
-    if (tab === 'ocr' && ocrReader) {
-        try { ocrReader.reset(); } catch(e) {}
-        ocrReader = null;
-        if (ocrStream) {
-            ocrStream.getTracks().forEach(t => t.stop());
-            ocrStream = null;
-        }
-    }
-}
-
-async function stopCameraFully() {
-    await stopCamera('scan');
-    await stopCamera('ocr');
-}
-
-async function startScanCamera() {
-    setStatus('Requesting camera...', '', 'cameraStatus');
-    clearSessionCandidates();
-    document.getElementById('scan-result').classList.remove('active');
-
-    const hints = new Map();
-    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, getAllFormats());
-    scanReader = new ZXing.BrowserMultiFormatReader(hints);
-
-    try {
-        const constraints = {
-            video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
-        };
-        scanStream = await navigator.mediaDevices.getUserMedia(constraints);
-
-        const videoEl = document.createElement('video');
-        videoEl.id = 'scanVideo';
-        videoEl.autoplay = true;
-        videoEl.playsInline = true;
-        videoEl.style.width = '100%';
-        videoEl.style.display = 'block';
-        videoEl.style.objectFit = 'contain';
-        if (bwEnabled) videoEl.classList.add('bw-filter');
-
-        const readerEl = document.getElementById('reader');
-        readerEl.innerHTML = '';
-        readerEl.appendChild(videoEl);
-
-        // Corner brackets
-        ['corner-tl','corner-tr','corner-bl','corner-br'].forEach(cls => {
-            const d = document.createElement('div');
-            d.className = cls;
-            d.style.display = 'block';
-            readerEl.appendChild(d);
-        });
-
-        videoEl.srcObject = scanStream;
-        await videoEl.play();
-
-        setStatus('Camera ready', 'success', 'cameraStatus');
-
-        const onScanSuccess = (decodedText, decodedResult) => {
-            const now = Date.now();
-            const fmtName = decodedResult?.result?.format?.formatName || 'barcode';
-
-            if (decodedText === scanLastValue && (now - scanLastTime < SCAN_COOLDOWN_MS)) return;
-
-            addSessionCandidate(decodedText, fmtName);
-            const best = getStableResult();
-
-            if (best && best.confidence === 'stable' && Object.keys(scanSessionCandidates).length === 1) {
-                scanLastValue = decodedText;
-                scanLastTime = now;
-                showScanResult(best.value, best.format, true);
-                addToHistory(best.value, best.format);
-                clearSessionCandidates();
-            } else if (best) {
-                showFormatCandidates(decodedText, fmtName);
-            }
-        };
-        const onScanFailure = (errorMessage, errorResult) => {};
-
-        scanReader.decodeFromVideoElement(videoEl, onScanSuccess, onScanFailure);
-
-    } catch (err) {
-        const msg = normalizeError(err);
-        if (err && err.name === 'NotFoundError') setStatus('Camera not found', 'error', 'cameraStatus');
-        else if (err && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError')) setStatus('Camera permission denied', 'error', 'cameraStatus');
-        else if (err && err.name === 'NotReadableError') setStatus('Camera in use by another app', 'error', 'cameraStatus');
-        else setStatus('Camera error: ' + msg, 'error', 'cameraStatus');
-    }
-}
-
-async function startOcrCamera() {
-    setStatus('Requesting camera...', '', 'ocrCameraStatus');
-    document.getElementById('ocr-result').classList.remove('active');
-
-    try {
-        const constraints = {
-            video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
-        };
-        ocrStream = await navigator.mediaDevices.getUserMedia(constraints);
-
-        const videoEl = document.createElement('video');
-        videoEl.id = 'ocrVideo';
-        videoEl.autoplay = true;
-        videoEl.playsInline = true;
-        videoEl.style.width = '100%';
-        videoEl.style.display = 'block';
-        videoEl.style.objectFit = 'contain';
-        if (bwEnabled) videoEl.classList.add('bw-filter');
-
-        const readerEl = document.getElementById('ocr-reader');
-        readerEl.innerHTML = '';
-        readerEl.appendChild(videoEl);
-
-        ['corner-tl','corner-tr','corner-bl','corner-br'].forEach(cls => {
-            const d = document.createElement('div');
-            d.className = cls;
-            d.style.display = 'block';
-            readerEl.appendChild(d);
-        });
-
-        videoEl.srcObject = ocrStream;
-        await videoEl.play();
-
-        setStatus('Camera ready', 'success', 'ocrCameraStatus');
-
-    } catch (err) {
-        const msg = normalizeError(err);
-        if (err && err.name === 'NotFoundError') setStatus('Camera not found', 'error', 'ocrCameraStatus');
-        else if (err && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError')) setStatus('Camera permission denied', 'error', 'ocrCameraStatus');
-        else if (err && err.name === 'NotReadableError') setStatus('Camera in use by another app', 'error', 'ocrCameraStatus');
-        else setStatus('Camera error: ' + msg, 'error', 'ocrCameraStatus');
-    }
-}
-
-// OCR Capture
-document.getElementById('ocrCaptureBtn').addEventListener('click', async () => {
-    const video = document.getElementById('ocrVideo');
-    const btn = document.getElementById('ocrCaptureBtn');
-    const resultEl = document.getElementById('ocr-result');
-    const preview = document.getElementById('ocr-preview');
-
-    if (!video || !video.videoWidth) {
-        resultEl.textContent = 'Camera not ready';
-        resultEl.className = 'result-box error active';
-        return;
-    }
-
-    btn.disabled = true;
-    btn.textContent = '⏳ Processing...';
-    resultEl.textContent = 'Reading text...';
-    resultEl.className = 'result-box active';
-
-    try {
-        const vw = video.videoWidth;
-        const vh = video.videoHeight;
-        const displayW = video.clientWidth;
-        const displayH = video.clientHeight;
-        const scaleX = vw / displayW;
-        const scaleY = vh / displayH;
-        const boxX = Math.round((vw - OCR_BOX_W * scaleX) / 2);
-        const boxY = Math.round((vh - OCR_BOX_H * scaleY) / 2);
-        const boxW = Math.round(OCR_BOX_W * scaleX);
-        const boxH = Math.round(OCR_BOX_H * scaleY);
-
-        const fullCanvas = document.createElement('canvas');
-        fullCanvas.width = vw;
-        fullCanvas.height = vh;
-        const fullCtx = fullCanvas.getContext('2d');
-        fullCtx.drawImage(video, 0, 0);
-
-        const cropCanvas = document.createElement('canvas');
-        cropCanvas.width = boxW;
-        cropCanvas.height = boxH;
-        const cropCtx = cropCanvas.getContext('2d');
-        cropCtx.drawImage(fullCanvas, boxX, boxY, boxW, boxH, 0, 0, boxW, boxH);
-
-        // Show preview
-        preview.src = cropCanvas.toDataURL('image/png');
-        preview.style.display = 'block';
-
-        // Enhance contrast
-        const imgData = cropCtx.getImageData(0, 0, boxW, boxH);
-        const data = imgData.data;
-        for (let i = 0; i < data.length; i += 4) {
-            const gray = data[i] * 0.299 + data[i+1] * 0.587 + data[i+2] * 0.114;
-            const enhanced = Math.min(255, Math.max(0, ((gray - 128) * 2.0) + 128));
-            data[i] = data[i+1] = data[i+2] = enhanced;
-        }
-        cropCtx.putImageData(imgData, 0, 0);
-
-        const result = await Tesseract.recognize(cropCanvas.toDataURL('image/png'), 'eng', { logger: () => {} });
-        const text = (result.data.text || '').trim();
-
-        if (!text) {
-            resultEl.textContent = 'No text found in frame';
-            resultEl.className = 'result-box error';
-            btn.disabled = false;
-            btn.textContent = '📸 Capture & Read Text';
-            return;
-        }
-
-        const lines = processOcrText(text);
-        if (lines.length === 0) {
-            resultEl.textContent = 'No valid text (EN/numbers/symbols only)';
-            resultEl.className = 'result-box error';
-            btn.disabled = false;
-            btn.textContent = '📸 Capture & Read Text';
-            return;
-        }
-
-        resultEl.className = 'result-box';
-        let html = '<p style="font-size:12px;color:#555;margin-bottom:8px">📝 Tap text to use:</p><div class="ocr-candidates">';
-        lines.forEach(line => {
-            const safe = line.replace(/'/g, "\\'");
-            html += `<div class="ocr-candidate"><span>${escapeHtml(line)}</span><button class="ocr-use-btn" onclick="useOcrCandidate('${safe}', 'ocr-result')">Use</button></div>`;
-        });
-        html += '</div>';
-        resultEl.innerHTML = html;
-
-    } catch(err) {
-        resultEl.textContent = 'OCR failed: ' + (err.message || err);
-        resultEl.className = 'result-box error';
-    }
-
-    btn.disabled = false;
-    btn.textContent = '📸 Capture & Read Text';
-});
-
-function useOcrCandidate(text, sourceEl) {
-    const el = document.getElementById(sourceEl);
-    el.innerHTML = `<p style="color:#060;font-size:13px">✅ <strong>${escapeHtml(text)}</strong></p>`;
-    el.className = 'result-box success active';
-    addToHistory(text, 'text');
-}
-
-// Upload handling
-document.getElementById('fileInput').addEventListener('change', async (e) => {
-    const file = e.target.files[0];
+uploadArea.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', async () => {
+    const file = fileInput.files[0];
     if (!file) return;
+    await processUpload(file);
+    fileInput.value = '';
+});
 
-    const preview = document.getElementById('upload-preview');
-    const resultEl = document.getElementById('upload-result');
+async function processUpload(file) {
+    const preview = document.getElementById('uploadPreview');
+    const resultCard = document.getElementById('uploadResult');
+
     preview.src = '';
-    preview.style.display = 'none';
-    resultEl.textContent = 'Processing image...';
-    resultEl.className = 'result-box active';
+    preview.classList.remove('show');
+    resultCard.classList.remove('show');
 
     const reader = new FileReader();
     reader.onload = async (e) => {
         preview.src = e.target.result;
-        preview.style.display = 'block';
+        preview.classList.add('show');
 
+        // Try barcode first
         try {
             const scanner = new ZXing.BrowserMultiFormatReader();
+            const hints = new Map();
+            hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, ALL_FORMATS);
+            scanner.setHints(hints);
+
             const result = await scanner.decodeFromImageUrl(preview.src);
             if (result && result.text) {
-                resultEl.textContent = `✓ ${result.text} (${result.format || 'barcode'})`;
-                resultEl.className = 'result-box success';
+                showUploadResult(result.text, result.format || 'barcode');
                 addToHistory(result.text, result.format || 'barcode');
                 return;
             }
-        } catch (err) {
-            // Try OCR
-            try {
-                const ocrResult = await Tesseract.recognize(e.target.result, 'eng', { logger: () => {} });
-                const text = (ocrResult.data.text || '').trim();
-                if (text) {
-                    const lines = processOcrText(text);
-                    if (lines.length > 0) {
-                        let html = '<p style="font-size:12px;color:#555;margin-bottom:8px">📝 Tap text to use:</p><div class="ocr-candidates">';
-                        lines.forEach(line => {
-                            const safe = line.replace(/'/g, "\\'");
-                            html += `<div class="ocr-candidate"><span>${escapeHtml(line)}</span><button class="ocr-use-btn" onclick="useOcrCandidate('${safe}', 'upload-result')">Use</button></div>`;
-                        });
-                        html += '</div>';
-                        resultEl.innerHTML = html;
-                        resultEl.className = 'result-box';
-                        return;
-                    }
-                }
-            } catch(ocrErr) {}
-            resultEl.textContent = 'No barcode or text found';
-            resultEl.className = 'result-box error';
+        } catch(err) {
+            // Fall through to OCR
         }
-    };
-    reader.onerror = () => {
-        resultEl.textContent = 'Could not read file';
-        resultEl.className = 'result-box error';
+
+        // OCR fallback
+        try {
+            const ocrResult = await Tesseract.recognize(e.target.result, 'eng', { logger: () => {} });
+            const text = (ocrResult.data.text || '').trim();
+            if (text) {
+                const lines = processOcrText(text);
+                if (lines.length > 0) {
+                    showUploadOcrCandidates(lines);
+                    return;
+                }
+            }
+        } catch(ocrErr) {}
+
+        showUploadResult('No barcode or text found', 'error');
     };
     reader.readAsDataURL(file);
-});
+}
 
-// History
+function showUploadResult(text, format) {
+    const card = document.getElementById('uploadResult');
+    const badge = document.getElementById('uploadTypeBadge');
+    const body = document.getElementById('uploadResultText');
+    badge.textContent = format?.toUpperCase() || 'RESULT';
+    body.textContent = text;
+    card.className = 'result-card show success';
+}
+
+function showUploadOcrCandidates(lines) {
+    const card = document.getElementById('uploadResult');
+    const badge = document.getElementById('uploadTypeBadge');
+    const body = document.getElementById('uploadResultText');
+    badge.textContent = 'TEXT';
+    card.className = 'result-card show success';
+
+    if (lines.length === 1) {
+        body.textContent = lines[0];
+        addToHistory(lines[0], 'text');
+    } else {
+        body.innerHTML = '<div style="font-size:12px;color:#666;margin-bottom:10px">📝 Tap to use:</div>';
+        lines.forEach(line => {
+            const safe = line.replace(/'/g, "\\'");
+            body.innerHTML += `
+                <div style="padding:8px 0;border-bottom:1px solid #ffffff10;display:flex;justify-content:space-between;align-items:center">
+                    <span style="font-size:14px;font-weight:500">${escapeHtml(line)}</span>
+                    <button onclick="useUploadOcrCandidate('${safe}')" style="background:#00ff8822;color:#00ff88;border:1px solid #00ff8844;padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">Use</button>
+                </div>`;
+        });
+    }
+}
+
+function useUploadOcrCandidate(text) {
+    showUploadResult(text, 'text');
+    addToHistory(text, 'text');
+}
+
+function dismissUploadResult() {
+    document.getElementById('uploadResult').classList.remove('show');
+    document.getElementById('uploadPreview').classList.remove('show');
+}
+
+// ═══════════════════════════════════════
+//  HISTORY
+// ═══════════════════════════════════════
 function getHistory() {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
     catch { return []; }
@@ -680,10 +1053,11 @@ function saveHistory(history) {
 function addToHistory(value, type) {
     const history = getHistory();
     if (history.length > 0 && history[0].value === value) return;
-    history.unshift({ value, type, time: new Date().toLocaleString() });
-    if (history.length > 200) history = history.slice(0, 200);
+    history.unshift({ value, type, time: new Date().toLocaleString('en-GB', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }) });
+    if (history.length > HISTORY_MAX) history.splice(HISTORY_MAX);
     saveHistory(history);
     renderHistory();
+    showToast(`Saved: ${value.slice(0, 30)}${value.length > 30 ? '…' : ''}`, 'success');
 }
 
 function deleteItem(index) {
@@ -702,38 +1076,58 @@ function renderHistory() {
     const history = getHistory();
     const list = document.getElementById('historyList');
     if (history.length === 0) {
-        list.innerHTML = '<div class="empty-state">No scanned items yet</div>';
+        list.innerHTML = '<div class="history-empty">No scanned items yet</div>';
         return;
     }
     list.innerHTML = history.map((item, i) => `
         <div class="history-item">
-            <div class="info">
+            <div>
                 <div class="value">${escapeHtml(item.value)}</div>
-                <div class="meta">${item.type} | ${item.time}</div>
+                <div class="meta">${item.type} · ${item.time}</div>
             </div>
-            <button class="delete-btn" onclick="deleteItem(${i})">×</button>
+            <button class="del-btn" onclick="deleteItem(${i})">×</button>
         </div>
     `).join('');
 }
 
+function escapeHtml(text) {
+    const d = document.createElement('div');
+    d.textContent = text;
+    return d.innerHTML;
+}
+
+// ═══════════════════════════════════════
+//  EXPORT
+// ═══════════════════════════════════════
 document.getElementById('exportBtn').addEventListener('click', () => {
     const history = getHistory();
-    if (history.length === 0) { alert('No items to export'); return; }
+    if (history.length === 0) { showToast('No items to export', 'error'); return; }
     const content = history.map(h => `${h.value} | ${h.type} | ${h.time}`).join('\n');
     const blob = new Blob([content], { type: 'text/plain' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `barcode_history_${new Date().toISOString().slice(0,10)}.txt`;
+    a.download = `barcode_${new Date().toISOString().slice(0,10)}.txt`;
     a.click();
+    showToast(`Exported ${history.length} items`, 'success');
 });
 
-document.getElementById('clearAllBtn').addEventListener('click', clearAll);
+document.getElementById('clearHistoryBtn').addEventListener('click', () => {
+    if (getHistory().length === 0) return;
+    if (confirm('Clear all history?')) clearAll();
+});
 
-// Init
-document.getElementById('versionBadge').textContent = `v${VERSION}`;
-document.getElementById('changelogLabel').textContent = `Changelog v${VERSION}`;
-renderHistory();
-startScanCamera();
+// ═══════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════
+let toastTimer = null;
+function showToast(msg, type = '') {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.className = 'toast ' + (type ? type : '');
+    if (toastTimer) clearTimeout(toastTimer);
+    toast.classList.add('show');
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2500);
+}
     </script>
 </body>
 </html>
