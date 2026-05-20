@@ -92,7 +92,7 @@
         <header>
             <div style="display:flex;align-items:center">
                 <h1>Barcode Scanner</h1>
-                <span class="version-badge" id="versionBadge">v3.5.0</span>
+                <span class="version-badge" id="versionBadge">v3.5.1</span>
             </div>
             <button class="btn" id="exportBtn">Export TXT</button>
         </header>
@@ -115,9 +115,6 @@
             <div id="scanStatus" class="camera-status"></div>
             <div id="scanResult" class="result-box"></div>
             <div class="controls" id="scanControls">
-                <div class="control-row flash-row">
-                    <button class="flash-btn" id="scanFlashBtn">🔦 Flash</button>
-                </div>
                 <div class="control-row">
                     <label class="bw-toggle">
                         <input type="checkbox" id="scanBwToggle" checked>
@@ -138,9 +135,6 @@
             </div>
             <div id="ocrStatus" class="camera-status"></div>
             <div class="controls" id="ocrControls">
-                <div class="control-row flash-row">
-                    <button class="flash-btn" id="ocrFlashBtn">🔦 Flash</button>
-                </div>
                 <div class="control-row">
                     <label class="bw-toggle">
                         <input type="checkbox" id="ocrBwToggle" checked>
@@ -184,7 +178,7 @@
     </div>
 
     <script>
-const VERSION = '3.5.0';
+const VERSION = '3.5.1';
 const STORAGE_KEY = 'barcode_history_v3';
 const SCAN_COOLDOWN_MS = 4000;
 const OCR_BOX_W = 250;
@@ -473,7 +467,12 @@ async function startScanCamera() {
         const onScanFailure = (err) => {};
 
         scanReader = new ZXing.BrowserMultiFormatReader(hints);
-        scanReader.decodeFromMediaStream(scanStream, onScanSuccess, onScanFailure);
+        scanReader.decodeFromStream(scanStream, videoEl, (result, err) => {
+            if (err || !result) return;
+            const decodedText = result.text || result;
+            const fmtName = result.format?.formatName || 'barcode';
+            onScanSuccess(decodedText, { result: { format: { formatName: fmtName } } });
+        });
 
     } catch (err) {
         const msg = normalizeError(err);
@@ -662,9 +661,10 @@ document.getElementById('fileInput').addEventListener('change', async (e) => {
             scanner.setHints(hints);
             const result = await scanner.decodeFromImageUrl(preview.src);
             if (result && result.text) {
-                resultEl.textContent = `✓ ${result.text} (${result.format || 'barcode'})`;
+                const fmt = result.format?.formatName || 'barcode';
+                resultEl.textContent = `✓ ${result.text} (${fmt})`;
                 resultEl.className = 'result-box active success';
-                addToHistory(result.text, result.format || 'barcode');
+                addToHistory(result.text, fmt);
                 statusEl.textContent = '';
                 return;
             }
@@ -673,7 +673,7 @@ document.getElementById('fileInput').addEventListener('change', async (e) => {
         }
 
         // Step 2: OCR fallback
-        statusEl.textContent = 'Running OCR…';
+        statusEl.textContent = 'Barcode/QR not found, running OCR…';
         try {
             const ocrResult = await Tesseract.recognize(e.target.result, 'eng', { logger: () => {} });
             const text = (ocrResult?.data?.text || '').trim();
