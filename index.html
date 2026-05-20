@@ -357,18 +357,28 @@ async function startScanCamera() {
     clearSessionCandidates();
     document.getElementById('scan-result').className = 'result-box';
 
+    // Cleanup old reader
+    if (scanReader) {
+        try { scanReader.reset(); } catch(e) {}
+        scanReader = null;
+    }
+
     const hints = new Map();
     hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, getAllFormats());
 
     try {
         const constraints = {
             video: {
-                facingMode: 'environment',
+                facingMode: { ideal: 'environment' },
                 width: { ideal: 1280 },
                 height: { ideal: 720 }
             }
         };
         scanStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+        const readerEl = document.getElementById('reader');
+        const old = readerEl.querySelector('video');
+        if (old) old.remove();
 
         const videoEl = document.createElement('video');
         videoEl.id = 'scanVideo';
@@ -377,15 +387,10 @@ async function startScanCamera() {
         videoEl.muted = true;
         videoEl.style.cssText = 'width:100%;display:block;object-fit:cover;position:absolute;top:0;left:0';
         if (bwEnabled) videoEl.classList.add('bw-filter');
-
-        const readerEl = document.getElementById('reader');
-        // Remove old video if any
-        const old = readerEl.querySelector('video');
-        if (old) old.remove();
         readerEl.appendChild(videoEl);
 
         videoEl.srcObject = scanStream;
-        await videoEl.play().catch(e => console.warn('play error:', e));
+        await videoEl.play().catch(e => console.warn('play:', e));
 
         setStatus('Camera ready — point at barcode', 'success', 'cameraStatus');
 
@@ -412,7 +417,7 @@ async function startScanCamera() {
         };
         const onScanFailure = (err) => {};
 
-        scanReader.decodeFromVideoElement(videoEl, onScanSuccess, onScanFailure);
+        scanReader.decodeFromMediaStream(scanStream, onScanSuccess, onScanFailure);
 
     } catch (err) {
         const msg = normalizeError(err);
