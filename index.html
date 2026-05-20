@@ -2,840 +2,557 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Barcode Scanner</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@aspect-dev/zxing-wasm@0.20.0/dist/umd/index.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Inter', -apple-system, sans-serif;
-            background: #0f0f0f;
-            color: #fff;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* ─── Header ─── */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px 20px;
-            border-bottom: 1px solid #222;
-            background: #0f0f0f;
-        }
-        .header-title {
-            font-size: 17px;
-            font-weight: 600;
-            letter-spacing: -0.3px;
-        }
-        .header-actions {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-        .icon-btn {
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
-            border: 1px solid #333;
-            background: transparent;
-            color: #888;
-            font-size: 16px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.15s;
-        }
-        .icon-btn:hover { border-color: #555; color: #fff; background: #1a1a1a; }
-        .icon-btn.active { background: #fff; color: #000; border-color: #fff; }
-        .version-badge {
-            font-size: 10px;
-            background: #1a1a1a;
-            border: 1px solid #333;
-            padding: 2px 7px;
-            border-radius: 4px;
-            color: #666;
-        }
-
-        /* ─── Tabs ─── */
-        .tabs {
-            display: flex;
-            background: #0f0f0f;
-            padding: 0 20px;
-            gap: 0;
-            border-bottom: 1px solid #222;
-        }
-        .tab {
-            flex: 1;
-            padding: 12px 8px;
-            text-align: center;
-            font-size: 12px;
-            font-weight: 500;
-            color: #555;
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
-            transition: all 0.15s;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-        }
-        .tab.active { color: #fff; border-bottom-color: #fff; }
-        .tab:not(.active):hover { color: #aaa; }
-        .tab-icon { font-size: 18px; }
-        .tab-label { font-size: 11px; }
-
-        /* ─── Sections ─── */
-        .section { display: none; flex: 1; flex-direction: column; }
-        .section.active { display: flex; }
-
-        /* ─── Camera View ─── */
-        .camera-wrap {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 4/3;
-            background: #000;
-            overflow: hidden;
-        }
-        .camera-wrap video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-        .camera-wrap video.bw {
-            filter: grayscale(1) contrast(1.3);
-        }
-
-        /* Scan overlay */
-        .scan-overlay {
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-        }
-        .scan-frame {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 70%;
-            height: 50%;
-            border: 2px solid rgba(255,255,255,0.7);
-            border-radius: 8px;
-            box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);
-        }
-        .scan-line {
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, #00ff88, transparent);
-            animation: scanMove 2s linear infinite;
-        }
-        @keyframes scanMove {
-            0% { top: 10%; opacity: 1; }
-            100% { top: 90%; opacity: 0; }
-        }
+        body { font-family: 'JetBrains Mono', monospace; background: #fff; color: #111; min-height: 100vh; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        h1 { font-size: 18px; font-weight: 600; }
+        .version-badge { font-size: 10px; background: #f0f0f0; padding: 3px 8px; border-radius: 3px; color: #666; margin-left: 8px; }
+        .btn { background: #fff; border: 1px solid #111; padding: 7px 14px; font-family: inherit; font-size: 12px; cursor: pointer; }
+        .btn:hover { background: #f0f0f0; }
+        .tabs { display: flex; gap: 0; margin-bottom: 16px; }
+        .tab { flex: 1; padding: 10px; text-align: center; border: 1px solid #111; cursor: pointer; font-size: 12px; }
+        .tab.active { background: #111; color: #fff; }
+        .tab:not(.active) { background: #fff; }
+        .scanner-section { border: 1px solid #111; padding: 14px; margin-bottom: 14px; position: relative; display: none; }
+        .scanner-section.active { display: block; }
+        #reader, #ocr-reader { width: 100%; aspect-ratio: 1 / 1; max-height: 320px; position: relative; background: #111; overflow: hidden; }
+        #reader video, #ocr-reader video { width: 100% !important; height: 100% !important; border-radius: 0; object-fit: cover; display: block; position: absolute; top: 0; left: 0; }
+        #reader video.bw-filter, #ocr-reader video.bw-filter { filter: grayscale(100%) contrast(130%) brightness(105%); }
         .corner-tl, .corner-tr, .corner-bl, .corner-br {
-            position: absolute;
-            width: 20px; height: 20px;
+            position: absolute; width: 20px; height: 20px;
+            border-color: #fff; border-style: solid;
+            pointer-events: none; z-index: 10;
         }
-        .corner-tl { top: -2px; left: -2px; border-top: 3px solid #00ff88; border-left: 3px solid #00ff88; border-radius: 3px 0 0 0; }
-        .corner-tr { top: -2px; right: -2px; border-top: 3px solid #00ff88; border-right: 3px solid #00ff88; border-radius: 0 3px 0 0; }
-        .corner-bl { bottom: -2px; left: -2px; border-bottom: 3px solid #00ff88; border-left: 3px solid #00ff88; border-radius: 0 0 0 3px; }
-        .corner-br { bottom: -2px; right: -2px; border-bottom: 3px solid #00ff88; border-right: 3px solid #00ff88; border-radius: 0 0 3px 0; }
-
-        /* Status bar */
-        .status-bar {
-            padding: 8px 20px;
-            font-size: 11px;
-            color: #555;
-            background: #0f0f0f;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            min-height: 32px;
-        }
-        .status-bar .dot {
-            width: 6px; height: 6px;
-            border-radius: 50%;
-            background: #333;
-        }
-        .status-bar .dot.live { background: #00ff88; box-shadow: 0 0 6px #00ff88; }
-        .status-bar .dot.error { background: #ff4444; }
-        .status-bar.error { color: #ff4444; }
-
-        /* ─── Result Card ─── */
-        .result-card {
-            margin: 16px 20px;
-            border-radius: 12px;
-            overflow: hidden;
-            display: none;
-        }
-        .result-card.show { display: block; }
-        .result-card.success { background: #0a1f0a; border: 1px solid #00ff8833; }
-        .result-card.error { background: #1f0a0a; border: 1px solid #ff444433; }
-        .result-card.warning { background: #1f1a0a; border: 1px solid #ffaa0033; }
-        .result-card-header {
-            padding: 12px 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid #ffffff10;
-        }
-        .result-card-header .type-badge {
-            font-size: 10px;
-            font-weight: 600;
-            padding: 2px 8px;
-            border-radius: 4px;
-            background: #00ff8822;
-            color: #00ff88;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-        }
-        .result-card-header .close-btn {
-            background: none;
-            border: none;
-            color: #555;
-            cursor: pointer;
-            font-size: 18px;
-            padding: 0;
-            line-height: 1;
-        }
-        .result-card-header .close-btn:hover { color: #fff; }
-        .result-card-body {
-            padding: 14px 16px;
-            font-size: 15px;
-            font-weight: 500;
-            word-break: break-all;
-            color: #e0e0e0;
-        }
-        .result-card-body .sub {
-            font-size: 11px;
-            color: #666;
-            margin-top: 4px;
-            font-weight: 400;
-        }
-
-        /* ─── Controls ─── */
-        .controls {
-            padding: 16px 20px;
-            display: flex;
-            gap: 8px;
-            background: #0f0f0f;
-            flex-wrap: wrap;
-        }
-        .ctrl-btn {
-            flex: 1;
-            min-width: 80px;
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: 1px solid #333;
-            background: #1a1a1a;
-            color: #888;
-            font-size: 12px;
-            font-family: inherit;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            transition: all 0.15s;
-        }
-        .ctrl-btn:hover { border-color: #555; color: #fff; }
-        .ctrl-btn.on { background: #00ff88; color: #000; border-color: #00ff88; }
-        .ctrl-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-        /* ─── Capture Button ─── */
-        .capture-wrap {
-            padding: 0 20px 20px;
-            background: #0f0f0f;
-        }
-        .capture-btn {
-            width: 100%;
-            padding: 16px;
-            border-radius: 12px;
-            border: none;
-            background: #fff;
-            color: #000;
-            font-size: 14px;
-            font-weight: 600;
-            font-family: inherit;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: all 0.15s;
-        }
-        .capture-btn:hover { background: #e8e8e8; }
-        .capture-btn:active { transform: scale(0.98); }
-        .capture-btn:disabled { background: #333; color: #666; cursor: not-allowed; transform: none; }
-
-        /* ─── Upload Section ─── */
-        .upload-area {
-            margin: 20px;
-            border: 2px dashed #333;
-            border-radius: 16px;
-            padding: 32px 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-        .upload-area:hover { border-color: #555; background: #111; }
-        .upload-icon { font-size: 36px; margin-bottom: 10px; }
-        .upload-text { font-size: 14px; color: #666; }
-        .upload-text span { color: #00ff88; }
-        .upload-preview {
-            max-width: 100%;
-            border-radius: 8px;
-            margin: 16px 20px 0;
-            display: none;
-        }
-        .upload-preview.show { display: block; }
-
-        /* ─── History ─── */
-        .history-section {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-        }
-        .history-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px 20px;
-            border-bottom: 1px solid #1a1a1a;
-        }
-        .history-header h2 { font-size: 13px; font-weight: 600; color: #aaa; }
-        .history-clear {
-            background: none;
-            border: none;
-            color: #666;
-            font-size: 11px;
-            cursor: pointer;
-            font-family: inherit;
-        }
-        .history-clear:hover { color: #ff4444; }
-        .history-list {
-            flex: 1;
-            overflow-y: auto;
-        }
-        .history-item {
-            padding: 14px 20px;
-            border-bottom: 1px solid #1a1a1a;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-        }
+        .corner-tl { top: 15%; left: 15%; border-width: 3px 0 0 3px; }
+        .corner-tr { top: 15%; right: 15%; border-width: 3px 3px 0 0; }
+        .corner-bl { bottom: 15%; left: 15%; border-width: 0 0 3px 3px; }
+        .corner-br { bottom: 15%; right: 15%; border-width: 0 3px 3px 0; }
+        .result-box { background: #f5f5f5; padding: 10px; margin-top: 10px; font-size: 13px; word-break: break-all; display: none; }
+        .result-box.active { display: block; }
+        .result-box.success { background: #d4edda; }
+        .result-box.error { background: #f8d7da; }
+        .camera-status { font-size: 11px; color: #888; margin-top: 8px; min-height: 16px; }
+        .camera-status.error { color: #c00; }
+        .camera-status.success { color: #060; }
+        .controls { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; padding: 12px; border: 1px solid #111; }
+        .control-row { display: flex; align-items: center; gap: 12px; }
+        .control-row label { font-size: 12px; min-width: 60px; }
+        .flash-btn { padding: 6px 12px; border: 1px solid #111; font-family: inherit; font-size: 11px; cursor: pointer; background: #fff; display: flex; align-items: center; gap: 4px; }
+        .flash-btn.on { background: #ff0; color: #111; border-color: #cc0; }
+        .flash-btn:hover { background: #f0f0f0; }
+        .flash-btn.on:hover { background: #dd0; }
+        .bw-toggle { display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; }
+        .bw-toggle input { cursor: pointer; }
+        .capture-btn { margin-top: 12px; width: 100%; padding: 12px; background: #111; color: #fff; border: none; font-family: inherit; font-size: 13px; cursor: pointer; font-weight: 600; }
+        .capture-btn:hover { background: #333; }
+        .capture-btn:disabled { background: #ccc; cursor: not-allowed; }
+        .upload-section { display: none; }
+        .upload-section.active { display: block; }
+        .file-input { width: 100%; padding: 10px; border: 1px solid #111; font-family: inherit; font-size: 12px; }
+        #upload-preview { max-width: 100%; margin-top: 10px; display: none; }
+        .history-section { margin-top: 20px; }
+        .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .history-header h2 { font-size: 13px; font-weight: 600; }
+        .history-list { border: 1px solid #111; max-height: 280px; overflow-y: auto; }
+        .history-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: flex-start; }
         .history-item:last-child { border-bottom: none; }
-        .history-item .value { font-size: 13px; font-weight: 500; word-break: break-all; }
-        .history-item .meta { font-size: 10px; color: #444; margin-top: 3px; }
-        .history-item .del-btn {
-            background: none;
-            border: none;
-            color: #333;
-            cursor: pointer;
-            font-size: 18px;
-            padding: 0 4px;
-            flex-shrink: 0;
-        }
-        .history-item .del-btn:hover { color: #ff4444; }
-        .history-empty {
-            padding: 40px 20px;
-            text-align: center;
-            color: #333;
-            font-size: 12px;
-        }
-
-        /* ─── Toast ─── */
-        .toast {
-            position: fixed;
-            bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%) translateY(80px);
-            background: #222;
-            color: #fff;
-            padding: 10px 20px;
-            border-radius: 24px;
-            font-size: 12px;
-            font-weight: 500;
-            z-index: 100;
-            transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
-            pointer-events: none;
-            white-space: nowrap;
-        }
-        .toast.show { transform: translateX(-50%) translateY(0); }
-        .toast.success { background: #0a2f0a; border: 1px solid #00ff8844; color: #00ff88; }
-        .toast.error { background: #2f0a0a; border: 1px solid #ff444444; color: #ff6666; }
-
-        /* ─── Changelog ─── */
-        .changelog {
-            padding: 16px 20px;
-            border-top: 1px solid #1a1a1a;
-        }
-        .changelog-toggle {
-            font-size: 11px;
-            color: #444;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            user-select: none;
-        }
-        .changelog-toggle:hover { color: #666; }
-        .changelog-content { display: none; margin-top: 10px; font-size: 11px; color: #555; line-height: 1.7; }
-        .changelog-content.visible { display: block; }
-        .changelog-item { margin-bottom: 6px; }
+        .history-item .info { flex: 1; }
+        .history-item .value { font-size: 12px; font-weight: 600; word-break: break-all; }
+        .history-item .meta { font-size: 10px; color: #666; margin-top: 3px; }
+        .history-item .delete-btn { background: none; border: none; cursor: pointer; font-size: 15px; padding: 3px; color: #aaa; }
+        .history-item .delete-btn:hover { color: #111; }
+        .empty-state { padding: 28px; text-align: center; color: #aaa; font-size: 12px; }
+        .ocr-preview { max-width: 100%; margin-top: 10px; display: none; border: 1px solid #111; }
+        .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #ddd; }
+        .changelog-toggle { font-size: 11px; color: #888; cursor: pointer; display: flex; align-items: center; gap: 6px; user-select: none; }
+        .changelog-toggle:hover { color: #111; }
+        .changelog { display: none; margin-top: 10px; font-size: 11px; color: #555; line-height: 1.6; }
+        .changelog.visible { display: block; }
+        .changelog-item { margin-bottom: 8px; padding-left: 8px; border-left: 2px solid #ddd; }
+        .changelog-item strong { color: #111; }
+        .ocr-candidates { display: flex; flex-direction: column; gap: 4px; }
+        .ocr-candidate { display: flex; align-items: center; gap: 8px; }
+        .ocr-candidate span { font-size: 12px; font-weight: 600; }
+        .ocr-use-btn { background: #111; color: #fff; border: none; padding: 4px 10px; font-size: 11px; cursor: pointer; font-family: inherit; }
+        .ocr-use-btn:hover { background: #444; }
     </style>
 </head>
 <body>
+    <div class="container">
+        <header>
+            <div style="display:flex;align-items:center">
+                <h1>Barcode Scanner</h1>
+                <span class="version-badge" id="versionBadge">v3.1.0</span>
+            </div>
+            <button class="btn" id="exportBtn">Export TXT</button>
+        </header>
 
-<!-- Header -->
-<div class="header">
-    <div class="header-title">Barcode Scanner</div>
-    <div class="header-actions">
-        <span class="version-badge" id="versionBadge">v4.0.0</span>
-        <button class="icon-btn" id="exportBtn" title="Export history">📥</button>
-    </div>
-</div>
+        <div class="tabs">
+            <div class="tab active" data-tab="scan">📷 Scan</div>
+            <div class="tab" data-tab="ocr">📝 OCR</div>
+            <div class="tab" data-tab="upload">🖼️ Upload</div>
+        </div>
 
-<!-- Tabs -->
-<div class="tabs">
-    <div class="tab active" data-tab="scan">
-        <span class="tab-icon">📷</span>
-        <span class="tab-label">Scan</span>
-    </div>
-    <div class="tab" data-tab="ocr">
-        <span class="tab-icon">📝</span>
-        <span class="tab-label">OCR</span>
-    </div>
-    <div class="tab" data-tab="upload">
-        <span class="tab-icon">🖼️</span>
-        <span class="tab-label">Upload</span>
-    </div>
-</div>
-
-<!-- SCAN section -->
-<div class="section scan-section active" id="scanSection">
-    <div class="camera-wrap" id="scanCameraWrap">
-        <video id="scanVideo" autoplay playsinline muted></video>
-        <div class="scan-overlay">
-            <div class="scan-frame">
-                <div class="scan-line" id="scanLine"></div>
+        <!-- SCAN tab: auto-detect barcode/QR, no capture button -->
+        <div class="scanner-section scan-section active">
+            <div id="reader">
                 <div class="corner-tl"></div>
                 <div class="corner-tr"></div>
                 <div class="corner-bl"></div>
                 <div class="corner-br"></div>
             </div>
+            <div id="cameraStatus" class="camera-status"></div>
+            <div id="scan-result" class="result-box"></div>
+            <div class="controls">
+                <div class="control-row">
+                    <label>Flash</label>
+                    <button class="flash-btn" id="flashBtn">🔦 Flash</button>
+                </div>
+                <div class="control-row">
+                    <label>B&amp;W</label>
+                    <label class="bw-toggle">
+                        <input type="checkbox" id="bwToggle" checked>
+                        <span>Grayscale + Contrast</span>
+                    </label>
+                </div>
+            </div>
         </div>
-    </div>
-    <div class="status-bar" id="scanStatus">
-        <span class="dot" id="scanDot"></span>
-        <span id="scanStatusText">Initializing camera...</span>
-    </div>
-    <div class="result-card" id="scanResult">
-        <div class="result-card-header">
-            <span class="type-badge" id="scanTypeBadge">BARCODE</span>
-            <button class="close-btn" onclick="dismissScanResult()">×</button>
-        </div>
-        <div class="result-card-body" id="scanResultText"></div>
-    </div>
-    <div class="controls">
-        <button class="ctrl-btn" id="scanFlashBtn">🔦 Flash</button>
-        <button class="ctrl-btn" id="scanBwBtn">B&amp;W</button>
-    </div>
-</div>
 
-<!-- OCR section -->
-<div class="section ocr-section" id="ocrSection">
-    <div class="camera-wrap" id="ocrCameraWrap">
-        <video id="ocrVideo" autoplay playsinline muted></video>
-        <div class="scan-overlay">
-            <div class="scan-frame">
-                <div class="scan-line"></div>
+        <!-- OCR tab: capture button, then OCR -->
+        <div class="scanner-section ocr-section">
+            <div id="ocr-reader">
                 <div class="corner-tl"></div>
                 <div class="corner-tr"></div>
                 <div class="corner-bl"></div>
                 <div class="corner-br"></div>
             </div>
+            <div id="ocrCameraStatus" class="camera-status"></div>
+            <div class="controls">
+                <div class="control-row">
+                    <label>Flash</label>
+                    <button class="flash-btn" id="ocrFlashBtn">🔦 Flash</button>
+                </div>
+                <div class="control-row">
+                    <label>B&amp;W</label>
+                    <label class="bw-toggle">
+                        <input type="checkbox" id="ocrBwToggle" checked>
+                        <span>Grayscale + Contrast</span>
+                    </label>
+                </div>
+            </div>
+            <button class="capture-btn" id="ocrCaptureBtn">📸 Capture &amp; Read Text</button>
+            <img id="ocr-preview" class="ocr-preview" alt="Captured frame">
+            <div id="ocr-result" class="result-box"></div>
+        </div>
+
+        <!-- Upload tab -->
+        <div class="scanner-section upload-section">
+            <input type="file" id="fileInput" class="file-input" accept="image/*">
+            <img id="upload-preview" alt="Preview">
+            <div id="upload-result" class="result-box"></div>
+        </div>
+
+        <div class="history-section">
+            <div class="history-header">
+                <h2>History</h2>
+                <button class="btn" id="clearAllBtn">Clear All</button>
+            </div>
+            <div class="history-list" id="historyList">
+                <div class="empty-state">No scanned items yet</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="changelog-toggle" onclick="document.getElementById('changelog').classList.toggle('visible')">
+                ▼ <span id="changelogLabel">Changelog v3.1.0</span>
+            </div>
+            <div class="changelog" id="changelog">
+                <div class="changelog-item"><strong>v3.1.0</strong> — Fixed camera init: use ZXing CDN build, lower resolution (1280×720), faster start.</div>
+                <div class="changelog-item"><strong>v3.0.0</strong> — 3 tabs: Scan (auto barcode/QR) / OCR (capture) / Upload. OCR EN/numbers/symbols only.</div>
+                <div class="changelog-item"><strong>v2.0.0</strong> — ZXing library for barcode decoding.</div>
+            </div>
         </div>
     </div>
-    <div class="status-bar" id="ocrStatus">
-        <span class="dot" id="ocrDot"></span>
-        <span id="ocrStatusText">Initializing camera...</span>
-    </div>
-    <div class="result-card" id="ocrResult">
-        <div class="result-card-header">
-            <span class="type-badge">TEXT</span>
-            <button class="close-btn" onclick="dismissOcrResult()">×</button>
-        </div>
-        <div class="result-card-body" id="ocrResultText"></div>
-    </div>
-    <img id="ocrPreview" class="upload-preview" alt="Captured">
-    <div class="controls">
-        <button class="ctrl-btn" id="ocrFlashBtn">🔦 Flash</button>
-        <button class="ctrl-btn" id="ocrBwBtn">B&amp;W</button>
-    </div>
-    <div class="capture-wrap">
-        <button class="capture-btn" id="ocrCaptureBtn" disabled>
-            📸 Capture &amp; Read Text
-        </button>
-    </div>
-</div>
 
-<!-- Upload section -->
-<div class="section upload-section" id="uploadSection">
-    <input type="file" id="fileInput" accept="image/*" style="display:none">
-    <div class="upload-area" id="uploadArea">
-        <div class="upload-icon">🖼️</div>
-        <div class="upload-text">Tap to select image or <span>browse</span></div>
-    </div>
-    <img id="uploadPreview" class="upload-preview" alt="Preview">
-    <div class="result-card" id="uploadResult">
-        <div class="result-card-header">
-            <span class="type-badge" id="uploadTypeBadge">RESULT</span>
-            <button class="close-btn" onclick="dismissUploadResult()">×</button>
-        </div>
-        <div class="result-card-body" id="uploadResultText"></div>
-    </div>
-</div>
+    <script>
+const VERSION = '3.1.0';
+const STORAGE_KEY = 'barcode_history_v3';
+const SCAN_COOLDOWN_MS = 4000;
+const OCR_BOX_W = 250;
+const OCR_BOX_H = 150;
+const FORMAT_STABILITY_THRESHOLD = 3;
 
-<!-- History (shared) -->
-<div class="history-section" id="historySection">
-    <div class="history-header">
-        <h2>History</h2>
-        <button class="history-clear" id="clearHistoryBtn">Clear all</button>
-    </div>
-    <div class="history-list" id="historyList">
-        <div class="history-empty">No scanned items yet</div>
-    </div>
-</div>
-
-<!-- Changelog -->
-<div class="changelog">
-    <div class="changelog-toggle" onclick="document.getElementById('changelogContent').classList.toggle('visible')">
-        ▼ <span id="changelogLabel">Changelog v4.0.0</span>
-    </div>
-    <div class="changelog-content" id="changelogContent">
-        <div class="changelog-item"><strong>v4.0.0</strong> — Complete rewrite: fast camera init, auto-detect barcode/QR, OCR capture with enhanced contrast, dark professional UI.</div>
-        <div class="changelog-item"><strong>v3.0.0</strong> — 3 tabs: Scan/OCR/Upload.</div>
-    </div>
-</div>
-
-<!-- Toast -->
-<div class="toast" id="toast"></div>
-
-<script>
-// ═══════════════════════════════════════
-//  CONFIG
-// ═══════════════════════════════════════
-const VERSION = '4.0.0';
-const STORAGE_KEY = 'barcode_v4_history';
-const HISTORY_MAX = 200;
-
-const ALL_FORMATS = [
-    ZXing.BarcodeFormat.QR_CODE,
-    ZXing.BarcodeFormat.CODE_128,
-    ZXing.BarcodeFormat.CODE_39,
-    ZXing.BarcodeFormat.CODE_93,
-    ZXing.BarcodeFormat.CODABAR,
-    ZXing.BarcodeFormat.EAN_13,
-    ZXing.BarcodeFormat.EAN_8,
-    ZXing.BarcodeFormat.UPC_A,
-    ZXing.BarcodeFormat.UPC_E,
-    ZXing.BarcodeFormat.ITF
-];
-
-// ═══════════════════════════════════════
-//  STATE
-// ═══════════════════════════════════════
-let currentTab = 'scan';
+let scanReader = null;
 let scanStream = null;
 let ocrStream = null;
-let scanReader = null;
+let scanLastValue = '';
+let scanLastTime = 0;
+let scanSessionCandidates = {};
 let bwEnabled = true;
 let flashEnabled = false;
-let lastScannedValue = '';
-let lastScannedTime = 0;
-const SCAN_COOLDOWN_MS = 3000;
+let currentTab = 'scan';
 
-// ═══════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════
-document.getElementById('versionBadge').textContent = `v${VERSION}`;
-document.getElementById('changelogLabel').textContent = `Changelog v${VERSION}`;
-renderHistory();
+function getAllFormats() {
+    return [
+        ZXing.BarcodeFormat.QR_CODE,
+        ZXing.BarcodeFormat.CODE_128,
+        ZXing.BarcodeFormat.CODE_39,
+        ZXing.BarcodeFormat.CODE_93,
+        ZXing.BarcodeFormat.CODABAR,
+        ZXing.BarcodeFormat.EAN_13,
+        ZXing.BarcodeFormat.EAN_8,
+        ZXing.BarcodeFormat.UPC_A,
+        ZXing.BarcodeFormat.UPC_E,
+        ZXing.BarcodeFormat.ITF
+    ];
+}
+
+function clearSessionCandidates() { scanSessionCandidates = {}; }
+
+function addSessionCandidate(value, format) {
+    if (!scanSessionCandidates[value]) {
+        scanSessionCandidates[value] = { format, count: 0, firstSeen: Date.now() };
+    }
+    scanSessionCandidates[value].count++;
+}
+
+function getStableResult() {
+    const entries = Object.entries(scanSessionCandidates);
+    const stable = entries.filter(([v, d]) => d.count >= FORMAT_STABILITY_THRESHOLD);
+    if (stable.length > 0) {
+        stable.sort((a, b) => b[1].count - a[1].count);
+        return { value: stable[0][0], format: stable[0][1].format };
+    }
+    if (entries.length > 0) {
+        entries.sort((a, b) => b[1].count - a[1].count);
+        return { value: entries[0][0], format: entries[0][1].format };
+    }
+    return null;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function showScanResult(value, format) {
+    const el = document.getElementById('scan-result');
+    el.textContent = `✓ ${value} (${format})`;
+    el.className = 'result-box active success';
+}
+
+function showFormatCandidates() {
+    const el = document.getElementById('scan-result');
+    const candidates = Object.entries(scanSessionCandidates)
+        .sort((a, b) => b[1].count - a[1].count)
+        .map(([v, d]) => {
+            const safe = v.replace(/'/g, "\\'");
+            return `<div class="ocr-candidate"><span>${escapeHtml(v)}</span><span style="color:#888;font-size:10px">${d.format} ×${d.count}</span><button class="ocr-use-btn" onclick="useScanCandidate('${safe}', '${d.format}')">Use</button></div>`;
+        }).join('');
+    el.innerHTML = `<p style="font-size:12px;color:#555;margin-bottom:8px">🔍 Multiple — tap to confirm:</p><div class="ocr-candidates">${candidates}</div>`;
+    el.className = 'result-box active';
+}
+
+function useScanCandidate(value, format) {
+    showScanResult(value, format);
+    addToHistory(value, format);
+    clearSessionCandidates();
+}
+
+function setStatus(msg, type, elId) {
+    const el = document.getElementById(elId || 'cameraStatus');
+    el.textContent = msg;
+    el.className = 'camera-status' + (type ? ' ' + type : '');
+}
+
+function normalizeError(e) {
+    if (typeof e === 'string') return e;
+    if (typeof e === 'undefined') return 'Unknown (undefined)';
+    if (e === null) return 'Unknown (null)';
+    if (e instanceof Event || (e && typeof e.type === 'string')) return 'Image load failed';
+    if (e.message) return e.message;
+    return String(e);
+}
+
+// Flash toggle
+document.getElementById('flashBtn').addEventListener('click', () => toggleFlash('scan'));
+document.getElementById('ocrFlashBtn').addEventListener('click', () => toggleFlash('ocr'));
+
+function toggleFlash(tab) {
+    flashEnabled = !flashEnabled;
+    const streams = { scan: scanStream, ocr: ocrStream };
+    const btnIds = { scan: 'flashBtn', ocr: 'ocrFlashBtn' };
+    const btn = document.getElementById(btnIds[tab]);
+    btn.classList.toggle('on', flashEnabled);
+    btn.textContent = flashEnabled ? '🔦 ON' : '🔦 Flash';
+    const stream = streams[tab];
+    if (stream) {
+        const track = stream.getVideoTracks()[0];
+        if (track && 'applyConstraints' in track) {
+            track.applyConstraints({ advanced: [{ torch: flashEnabled }] }).catch(() => {});
+        }
+    }
+}
+
+// B&W toggle
+document.getElementById('bwToggle').addEventListener('change', (e) => toggleBw(e.checked, 'scanVideo'));
+document.getElementById('ocrBwToggle').addEventListener('change', (e) => toggleBw(e.checked, 'ocrVideo'));
+
+function toggleBw(enabled, videoId) {
+    bwEnabled = enabled;
+    const v = document.getElementById(videoId);
+    if (v) v.classList.toggle('bw-filter', enabled);
+}
 
 // Tab switching
 document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', async () => {
         const target = tab.dataset.tab;
         if (target === currentTab) return;
-        switchTab(target);
+
+        await stopCamera(currentTab);
+        await new Promise(r => setTimeout(r, 300));
+
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.scanner-section').forEach(s => s.classList.remove('active'));
+        tab.classList.add('active');
+        document.querySelector(`.${target}-section`).classList.add('active');
+        currentTab = target;
+
+        if (target === 'scan') await startScanCamera();
+        else if (target === 'ocr') await startOcrCamera();
     });
 });
 
-// Start scan camera on load
-initScanCamera();
-
-// ═══════════════════════════════════════
-//  TAB SWITCHING
-// ═══════════════════════════════════════
-async function switchTab(target) {
-    // Stop current camera
-    if (currentTab === 'scan') stopCameraStream();
-    if (currentTab === 'ocr') stopOcrStream();
-
-    // Update UI
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.querySelector(`.${target}-section`).classList.add('active');
-    document.querySelector(`[data-tab="${target}"]`).classList.add('active');
-
-    const prevTab = currentTab;
-    currentTab = target;
-
-    // Start appropriate camera
-    if (target === 'scan') await initScanCamera();
-    else if (target === 'ocr') await initOcrCamera();
-}
-
-function setStatus(text, type, elId, dotId) {
-    const el = elId ? document.getElementById(elId) : document.getElementById('scanStatusText');
-    const dot = dotId ? document.getElementById(dotId) : document.getElementById('scanDot');
-    if (el) el.textContent = text;
-    if (dot) {
-        dot.className = 'dot';
-        if (type === 'success') dot.classList.add('live');
-        else if (type === 'error') dot.classList.add('error');
-    }
-    const statusBar = document.getElementById(target === 'scan' ? 'scanStatus' : 'ocrStatus');
-    if (statusBar) {
-        statusBar.className = 'status-bar' + (type === 'error' ? ' error' : '');
-    }
-}
-
-// ═══════════════════════════════════════
-//  CAMERA — SCAN
-// ═══════════════════════════════════════
-async function initScanCamera() {
-    const video = document.getElementById('scanVideo');
-    video.srcObject = null;
-    setStatus('Requesting camera...', '', 'scanStatusText', 'scanDot');
-
-    try {
-        // Request camera
-        scanStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 }
-        }});
-        video.srcObject = scanStream;
-        await video.play();
-
-        // Apply B&W
-        video.classList.toggle('bw', bwEnabled);
-
-        setStatus('Ready — point at barcode', 'success', 'scanStatusText', 'scanDot');
-
-        // Start barcode scanning
-        startBarcodeScanning(video);
-
-    } catch (err) {
-        console.error('Camera error:', err);
-        if (err.name === 'NotFoundError') setStatus('Camera not found', 'error', 'scanStatusText', 'scanDot');
-        else if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') setStatus('Permission denied', 'error', 'scanStatusText', 'scanDot');
-        else if (err.name === 'NotReadableError') setStatus('Camera in use', 'error', 'scanStatusText', 'scanDot');
-        else setStatus('Camera error', 'error', 'scanStatusText', 'scanDot');
-    }
-}
-
-function startBarcodeScanning(video) {
-    // Clean up old reader
-    if (scanReader) {
+async function stopCamera(tab) {
+    if (tab === 'scan' && scanReader) {
         try { scanReader.reset(); } catch(e) {}
         scanReader = null;
-    }
-
-    const hints = new Map();
-    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, ALL_FORMATS);
-    scanReader = new ZXing.BrowserMultiFormatReader(hints);
-
-    scanReader.decodeFromVideoElement(video, (text, result) => {
-        if (!text) return;
-        const now = Date.now();
-        const fmt = result?.result?.format?.formatName || 'barcode';
-
-        // Dedup
-        if (text === lastScannedValue && (now - lastScannedTime < SCAN_COOLDOWN_MS)) return;
-
-        lastScannedValue = text;
-        lastScannedTime = now;
-
-        // Animate scan line
-        const scanLine = document.getElementById('scanLine');
-        if (scanLine) {
-            scanLine.style.animation = 'none';
-            scanLine.offsetHeight; // reflow
-            scanLine.style.animation = 'scanMove 0.4s ease-out';
+        if (scanStream) {
+            scanStream.getTracks().forEach(t => t.stop());
+            scanStream = null;
         }
-
-        showScanResult(text, fmt);
-        addToHistory(text, fmt);
-
-    }, (err) => {
-        // Silent failure — continuous scanning
-    });
-}
-
-function showScanResult(text, format) {
-    const card = document.getElementById('scanResult');
-    const badge = document.getElementById('scanTypeBadge');
-    const body = document.getElementById('scanResultText');
-
-    badge.textContent = format;
-    body.textContent = text;
-    body.innerHTML += `<div class="sub">${format} · just now</div>`;
-    card.className = 'result-card show success';
-}
-
-function dismissScanResult() {
-    document.getElementById('scanResult').classList.remove('show');
-}
-
-function stopCameraStream() {
-    if (scanStream) {
-        scanStream.getTracks().forEach(t => t.stop());
-        scanStream = null;
     }
-    if (scanReader) {
-        try { scanReader.reset(); } catch(e) {}
-        scanReader = null;
-    }
-}
-
-// ═══════════════════════════════════════
-//  CAMERA — OCR
-// ═══════════════════════════════════════
-async function initOcrCamera() {
-    const video = document.getElementById('ocrVideo');
-    video.srcObject = null;
-    setStatus('Requesting camera...', '', 'ocrStatusText', 'ocrDot');
-    document.getElementById('ocrCaptureBtn').disabled = true;
-
-    try {
-        ocrStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 }
-        }});
-        video.srcObject = ocrStream;
-        await video.play();
-
-        video.classList.toggle('bw', bwEnabled);
-        setStatus('Ready — frame your text', 'success', 'ocrStatusText', 'ocrDot');
-        document.getElementById('ocrCaptureBtn').disabled = false;
-
-    } catch (err) {
-        console.error('OCR camera error:', err);
-        if (err.name === 'NotFoundError') setStatus('Camera not found', 'error', 'ocrStatusText', 'ocrDot');
-        else if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') setStatus('Permission denied', 'error', 'ocrStatusText', 'ocrDot');
-        else setStatus('Camera error', 'error', 'ocrStatusText', 'ocrDot');
-    }
-}
-
-function stopOcrStream() {
-    if (ocrStream) {
+    if (tab === 'ocr' && ocrStream) {
         ocrStream.getTracks().forEach(t => t.stop());
         ocrStream = null;
     }
-    const video = document.getElementById('ocrVideo');
-    if (video) video.srcObject = null;
 }
 
-// ═══════════════════════════════════════
-//  OCR CAPTURE
-// ═══════════════════════════════════════
+// ─── SCAN CAMERA ───
+async function startScanCamera() {
+    setStatus('Requesting camera...', '', 'cameraStatus');
+    clearSessionCandidates();
+    document.getElementById('scan-result').className = 'result-box';
+
+    const hints = new Map();
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, getAllFormats());
+
+    try {
+        const constraints = {
+            video: {
+                facingMode: 'environment',
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            }
+        };
+        scanStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+        const videoEl = document.createElement('video');
+        videoEl.id = 'scanVideo';
+        videoEl.autoplay = true;
+        videoEl.playsInline = true;
+        videoEl.muted = true;
+        videoEl.style.cssText = 'width:100%;display:block;object-fit:cover;position:absolute;top:0;left:0';
+        if (bwEnabled) videoEl.classList.add('bw-filter');
+
+        const readerEl = document.getElementById('reader');
+        // Remove old video if any
+        const old = readerEl.querySelector('video');
+        if (old) old.remove();
+        readerEl.appendChild(videoEl);
+
+        videoEl.srcObject = scanStream;
+        await videoEl.play().catch(e => console.warn('play error:', e));
+
+        setStatus('Camera ready — point at barcode', 'success', 'cameraStatus');
+
+        scanReader = new ZXing.BrowserMultiFormatReader(hints);
+
+        const onScanSuccess = (decodedText, decodedResult) => {
+            const now = Date.now();
+            const fmtName = decodedResult?.result?.format?.formatName || 'barcode';
+
+            if (decodedText === scanLastValue && (now - scanLastTime < SCAN_COOLDOWN_MS)) return;
+
+            addSessionCandidate(decodedText, fmtName);
+            const best = getStableResult();
+
+            if (best && Object.keys(scanSessionCandidates).length === 1) {
+                scanLastValue = decodedText;
+                scanLastTime = now;
+                showScanResult(best.value, best.format);
+                addToHistory(best.value, best.format);
+                clearSessionCandidates();
+            } else {
+                showFormatCandidates();
+            }
+        };
+        const onScanFailure = (err) => {};
+
+        scanReader.decodeFromVideoElement(videoEl, onScanSuccess, onScanFailure);
+
+    } catch (err) {
+        const msg = normalizeError(err);
+        if (err && err.name === 'NotFoundError') setStatus('Camera not found', 'error', 'cameraStatus');
+        else if (err && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError')) setStatus('Permission denied', 'error', 'cameraStatus');
+        else if (err && err.name === 'NotReadableError') setStatus('Camera in use', 'error', 'cameraStatus');
+        else setStatus('Error: ' + msg, 'error', 'cameraStatus');
+    }
+}
+
+// ─── OCR CAMERA ───
+async function startOcrCamera() {
+    setStatus('Requesting camera...', '', 'ocrCameraStatus');
+    document.getElementById('ocr-result').className = 'result-box';
+
+    try {
+        const constraints = {
+            video: {
+                facingMode: 'environment',
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            }
+        };
+        ocrStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+        const videoEl = document.createElement('video');
+        videoEl.id = 'ocrVideo';
+        videoEl.autoplay = true;
+        videoEl.playsInline = true;
+        videoEl.muted = true;
+        videoEl.style.cssText = 'width:100%;display:block;object-fit:cover;position:absolute;top:0;left:0';
+        if (bwEnabled) videoEl.classList.add('bw-filter');
+
+        const readerEl = document.getElementById('ocr-reader');
+        const old = readerEl.querySelector('video');
+        if (old) old.remove();
+        readerEl.appendChild(videoEl);
+
+        videoEl.srcObject = ocrStream;
+        await videoEl.play().catch(e => console.warn('play error:', e));
+
+        setStatus('Camera ready — frame your text', 'success', 'ocrCameraStatus');
+
+    } catch (err) {
+        const msg = normalizeError(err);
+        if (err && err.name === 'NotFoundError') setStatus('Camera not found', 'error', 'ocrCameraStatus');
+        else if (err && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError')) setStatus('Permission denied', 'error', 'ocrCameraStatus');
+        else setStatus('Error: ' + msg, 'error', 'ocrCameraStatus');
+    }
+}
+
+// ─── OCR CAPTURE ───
 document.getElementById('ocrCaptureBtn').addEventListener('click', async () => {
     const video = document.getElementById('ocrVideo');
     const btn = document.getElementById('ocrCaptureBtn');
-    const resultCard = document.getElementById('ocrResult');
-    const preview = document.getElementById('ocrPreview');
+    const resultEl = document.getElementById('ocr-result');
+    const preview = document.getElementById('ocr-preview');
 
     if (!video || !video.videoWidth) {
-        showToast('Camera not ready', 'error');
+        resultEl.textContent = 'Camera not ready';
+        resultEl.className = 'result-box active error';
         return;
     }
 
     btn.disabled = true;
-    btn.textContent = '⏳ Reading...';
-    resultCard.classList.remove('show');
+    btn.textContent = '⏳ Processing...';
+    resultEl.textContent = 'Reading text...';
+    resultEl.className = 'result-box active';
 
     try {
-        // Capture full frame
         const vw = video.videoWidth;
         const vh = video.videoHeight;
-        const canvas = document.createElement('canvas');
-        canvas.width = vw;
-        canvas.height = vh;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0);
+        const displayW = video.clientWidth;
+        const displayH = video.clientHeight;
+        const scaleX = vw / displayW;
+        const scaleY = vh / displayH;
+        const boxX = Math.round((vw - OCR_BOX_W * scaleX) / 2);
+        const boxY = Math.round((vh - OCR_BOX_H * scaleY) / 2);
+        const boxW = Math.round(OCR_BOX_W * scaleX);
+        const boxH = Math.round(OCR_BOX_H * scaleY);
 
-        // Crop center region
-        const cropW = Math.round(vw * 0.7);
-        const cropH = Math.round(vh * 0.35);
-        const cropX = Math.round((vw - cropW) / 2);
-        const cropY = Math.round((vh - cropH) / 2);
+        const fullCanvas = document.createElement('canvas');
+        fullCanvas.width = vw;
+        fullCanvas.height = vh;
+        const fullCtx = fullCanvas.getContext('2d');
+        fullCtx.drawImage(video, 0, 0);
 
         const cropCanvas = document.createElement('canvas');
-        cropCanvas.width = cropW;
-        cropCanvas.height = cropH;
+        cropCanvas.width = boxW;
+        cropCanvas.height = boxH;
         const cropCtx = cropCanvas.getContext('2d');
-        cropCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+        cropCtx.drawImage(fullCanvas, boxX, boxY, boxW, boxH, 0, 0, boxW, boxH);
 
-        // Show preview
         preview.src = cropCanvas.toDataURL('image/png');
-        preview.classList.add('show');
+        preview.style.display = 'block';
 
         // Enhance contrast
-        const imgData = cropCtx.getImageData(0, 0, cropW, cropH);
+        const imgData = cropCtx.getImageData(0, 0, boxW, boxH);
         const data = imgData.data;
         for (let i = 0; i < data.length; i += 4) {
             const gray = data[i] * 0.299 + data[i+1] * 0.587 + data[i+2] * 0.114;
-            const enhanced = Math.min(255, Math.max(0, ((gray - 128) * 1.8) + 128));
+            const enhanced = Math.min(255, Math.max(0, ((gray - 128) * 2.0) + 128));
             data[i] = data[i+1] = data[i+2] = enhanced;
         }
         cropCtx.putImageData(imgData, 0, 0);
 
-        // OCR
         const result = await Tesseract.recognize(
             cropCanvas.toDataURL('image/png'),
             'eng',
-            { logger: m => {
-                if (m.status === 'recognizing text') {
-                    btn.textContent = `⏳ ${Math.round(m.progress * 100)}%`;
-                }
-            }}
+            { logger: () => {} }
         );
+        const text = (result.data.text || '').trim();
 
-        const raw = (result.data.text || '').trim();
-        const lines = processOcrText(raw);
-
-        if (lines.length === 0 || !raw) {
-            showOcrResult('No text detected. Try again.', 'error');
-        } else {
-            // Show candidates
-            showOcrCandidates(lines);
+        if (!text) {
+            resultEl.textContent = 'No text found in frame';
+            resultEl.className = 'result-box active error';
+            btn.disabled = false;
+            btn.textContent = '📸 Capture & Read Text';
+            return;
         }
 
+        const lines = processOcrText(text);
+        if (lines.length === 0) {
+            resultEl.textContent = 'No valid text (EN/numbers/symbols only)';
+            resultEl.className = 'result-box active error';
+            btn.disabled = false;
+            btn.textContent = '📸 Capture & Read Text';
+            return;
+        }
+
+        resultEl.className = 'result-box active';
+        let html = '<p style="font-size:12px;color:#555;margin-bottom:8px">📝 Tap text to use:</p><div class="ocr-candidates">';
+        lines.forEach(line => {
+            const safe = line.replace(/'/g, "\\'");
+            html += `<div class="ocr-candidate"><span>${escapeHtml(line)}</span><button class="ocr-use-btn" onclick="useOcrCandidate('${safe}')">Use</button></div>`;
+        });
+        html += '</div>';
+        resultEl.innerHTML = html;
+
     } catch(err) {
-        console.error('OCR error:', err);
-        showOcrResult('OCR failed: ' + (err.message || 'unknown'), 'error');
+        resultEl.textContent = 'OCR failed: ' + (err.message || err);
+        resultEl.className = 'result-box active error';
     }
 
     btn.disabled = false;
@@ -847,287 +564,146 @@ function processOcrText(text) {
     const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     const result = [];
     for (const line of lines) {
-        // Collapse 2+ spaces to 1
         const collapsed = line.replace(/ {2,}/g, ' ');
-        // Keep only valid chars: A-Z a-z 0-9 - _ space
-        const cleaned = collapsed.replace(/[^A-Za-z0-9_\- ]/g, '').trim();
-        if (cleaned.length > 0 && cleaned.length >= 2) {
-            result.push(cleaned);
-        }
+        const cleaned = collapsed.replace(/[^A-Za-z0-9_\- ]/g, '');
+        if (cleaned.length >= 2) result.push(cleaned);
     }
     return result;
 }
 
-function showOcrResult(text, type) {
-    const card = document.getElementById('ocrResult');
-    const body = document.getElementById('ocrResultText');
-    card.className = 'result-card show ' + type;
-    body.textContent = text;
-}
-
-function showOcrCandidates(lines) {
-    const card = document.getElementById('ocrResult');
-    const body = document.getElementById('ocrResultText');
-    card.className = 'result-card show success';
-
-    if (lines.length === 1) {
-        // Single result — auto-select
-        const selected = lines[0];
-        body.innerHTML = `${escapeHtml(selected)}<div class="sub">text · just now</div>`;
-        addToHistory(selected, 'text');
-    } else {
-        body.innerHTML = '<div style="font-size:12px;color:#666;margin-bottom:10px">📝 Tap to use:</div>';
-        lines.forEach(line => {
-            const safe = line.replace(/'/g, "\\'");
-            body.innerHTML += `
-                <div style="padding:8px 0;border-bottom:1px solid #ffffff10;display:flex;justify-content:space-between;align-items:center">
-                    <span style="font-size:14px;font-weight:500">${escapeHtml(line)}</span>
-                    <button onclick="useOcrCandidate('${safe}')" style="background:#00ff8822;color:#00ff88;border:1px solid #00ff8844;padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">Use</button>
-                </div>`;
-        });
-    }
-}
-
 function useOcrCandidate(text) {
-    showOcrResult(`✅ ${text}`, 'success');
+    const resultEl = document.getElementById('ocr-result');
+    resultEl.innerHTML = `<p style="color:#060;font-size:13px">✅ <strong>${escapeHtml(text)}</strong></p>`;
+    resultEl.className = 'result-box active success';
     addToHistory(text, 'text');
-    document.getElementById('ocrPreview').classList.remove('show');
 }
 
-function dismissOcrResult() {
-    document.getElementById('ocrResult').classList.remove('show');
-}
-
-// ═══════════════════════════════════════
-//  FLASH & B&W CONTROLS
-// ═══════════════════════════════════════
-document.getElementById('scanFlashBtn').addEventListener('click', () => toggleFlash('scan'));
-document.getElementById('ocrFlashBtn').addEventListener('click', () => toggleFlash('ocr'));
-document.getElementById('scanBwBtn').addEventListener('click', () => toggleBw('scan'));
-document.getElementById('ocrBwBtn').addEventListener('click', () => toggleBw('ocr'));
-
-function toggleFlash(tab) {
-    flashEnabled = !flashEnabled;
-    const streams = { scan: scanStream, ocr: ocrStream };
-    const btns = { scan: 'scanFlashBtn', ocr: 'ocrFlashBtn' };
-
-    document.getElementById(btns[tab]).classList.toggle('on', flashEnabled);
-
-    const stream = streams[tab];
-    if (stream) {
-        const track = stream.getVideoTracks()[0];
-        if (track && 'applyConstraints' in track) {
-            track.applyConstraints({ advanced: [{ torch: flashEnabled }] }).catch(() => {});
-        }
-    }
-}
-
-function toggleBw(tab) {
-    bwEnabled = !bwEnabled;
-    const videoId = tab === 'scan' ? 'scanVideo' : 'ocrVideo';
-    const btnId = tab === 'scan' ? 'scanBwBtn' : 'ocrBwBtn';
-    document.getElementById(videoId).classList.toggle('bw', bwEnabled);
-    document.getElementById(btnId).classList.toggle('on', !bwEnabled);
-}
-
-// Init B&W button states
-document.getElementById('scanBwBtn').classList.toggle('on', !bwEnabled);
-document.getElementById('ocrBwBtn').classList.toggle('on', !bwEnabled);
-
-// ═══════════════════════════════════════
-//  UPLOAD
-// ═══════════════════════════════════════
-const uploadArea = document.getElementById('uploadArea');
-const fileInput = document.getElementById('fileInput');
-
-uploadArea.addEventListener('click', () => fileInput.click());
-fileInput.addEventListener('change', async () => {
-    const file = fileInput.files[0];
+// ─── UPLOAD ───
+document.getElementById('fileInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
     if (!file) return;
-    await processUpload(file);
-    fileInput.value = '';
-});
 
-async function processUpload(file) {
-    const preview = document.getElementById('uploadPreview');
-    const resultCard = document.getElementById('uploadResult');
-
+    const preview = document.getElementById('upload-preview');
+    const resultEl = document.getElementById('upload-result');
     preview.src = '';
-    preview.classList.remove('show');
-    resultCard.classList.remove('show');
+    preview.style.display = 'none';
+    resultEl.textContent = 'Processing image...';
+    resultEl.className = 'result-box active';
 
     const reader = new FileReader();
     reader.onload = async (e) => {
         preview.src = e.target.result;
-        preview.classList.add('show');
+        preview.style.display = 'block';
 
-        // Try barcode first
         try {
-            const scanner = new ZXing.BrowserMultiFormatReader();
             const hints = new Map();
-            hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, ALL_FORMATS);
+            hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, getAllFormats());
+            const scanner = new ZXing.BrowserMultiFormatReader(hints);
             scanner.setHints(hints);
-
             const result = await scanner.decodeFromImageUrl(preview.src);
             if (result && result.text) {
-                showUploadResult(result.text, result.format || 'barcode');
+                resultEl.textContent = `✓ ${result.text} (${result.format || 'barcode'})`;
+                resultEl.className = 'result-box active success';
                 addToHistory(result.text, result.format || 'barcode');
                 return;
             }
-        } catch(err) {
-            // Fall through to OCR
-        }
+        } catch (err) {}
 
-        // OCR fallback
         try {
             const ocrResult = await Tesseract.recognize(e.target.result, 'eng', { logger: () => {} });
             const text = (ocrResult.data.text || '').trim();
             if (text) {
                 const lines = processOcrText(text);
                 if (lines.length > 0) {
-                    showUploadOcrCandidates(lines);
+                    resultEl.innerHTML = '<p style="font-size:12px;color:#555;margin-bottom:8px">📝 Tap text to use:</p><div class="ocr-candidates">' +
+                        lines.map(line => {
+                            const safe = line.replace(/'/g, "\\'");
+                            return `<div class="ocr-candidate"><span>${escapeHtml(line)}</span><button class="ocr-use-btn" onclick="useUploadOcrCandidate('${safe}')">Use</button></div>`;
+                        }).join('') + '</div>';
+                    resultEl.className = 'result-box active';
                     return;
                 }
             }
         } catch(ocrErr) {}
 
-        showUploadResult('No barcode or text found', 'error');
+        resultEl.textContent = 'No barcode or text found';
+        resultEl.className = 'result-box active error';
+    };
+    reader.onerror = () => {
+        resultEl.textContent = 'Could not read file';
+        resultEl.className = 'result-box active error';
     };
     reader.readAsDataURL(file);
-}
-
-function showUploadResult(text, format) {
-    const card = document.getElementById('uploadResult');
-    const badge = document.getElementById('uploadTypeBadge');
-    const body = document.getElementById('uploadResultText');
-    badge.textContent = format?.toUpperCase() || 'RESULT';
-    body.textContent = text;
-    card.className = 'result-card show success';
-}
-
-function showUploadOcrCandidates(lines) {
-    const card = document.getElementById('uploadResult');
-    const badge = document.getElementById('uploadTypeBadge');
-    const body = document.getElementById('uploadResultText');
-    badge.textContent = 'TEXT';
-    card.className = 'result-card show success';
-
-    if (lines.length === 1) {
-        body.textContent = lines[0];
-        addToHistory(lines[0], 'text');
-    } else {
-        body.innerHTML = '<div style="font-size:12px;color:#666;margin-bottom:10px">📝 Tap to use:</div>';
-        lines.forEach(line => {
-            const safe = line.replace(/'/g, "\\'");
-            body.innerHTML += `
-                <div style="padding:8px 0;border-bottom:1px solid #ffffff10;display:flex;justify-content:space-between;align-items:center">
-                    <span style="font-size:14px;font-weight:500">${escapeHtml(line)}</span>
-                    <button onclick="useUploadOcrCandidate('${safe}')" style="background:#00ff8822;color:#00ff88;border:1px solid #00ff8844;padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">Use</button>
-                </div>`;
-        });
-    }
-}
+});
 
 function useUploadOcrCandidate(text) {
-    showUploadResult(text, 'text');
+    const resultEl = document.getElementById('upload-result');
+    resultEl.textContent = `✓ ${text} (text)`;
+    resultEl.className = 'result-box active success';
     addToHistory(text, 'text');
 }
 
-function dismissUploadResult() {
-    document.getElementById('uploadResult').classList.remove('show');
-    document.getElementById('uploadPreview').classList.remove('show');
-}
-
-// ═══════════════════════════════════════
-//  HISTORY
-// ═══════════════════════════════════════
+// ─── HISTORY ───
 function getHistory() {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
     catch { return []; }
 }
-
 function saveHistory(history) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
 }
-
 function addToHistory(value, type) {
     const history = getHistory();
     if (history.length > 0 && history[0].value === value) return;
-    history.unshift({ value, type, time: new Date().toLocaleString('en-GB', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }) });
-    if (history.length > HISTORY_MAX) history.splice(HISTORY_MAX);
+    history.unshift({ value, type, time: new Date().toLocaleString() });
+    if (history.length > 200) history.splice(200);
     saveHistory(history);
     renderHistory();
-    showToast(`Saved: ${value.slice(0, 30)}${value.length > 30 ? '…' : ''}`, 'success');
 }
-
 function deleteItem(index) {
     const history = getHistory();
     history.splice(index, 1);
     saveHistory(history);
     renderHistory();
 }
-
 function clearAll() {
     saveHistory([]);
     renderHistory();
 }
-
 function renderHistory() {
     const history = getHistory();
     const list = document.getElementById('historyList');
     if (history.length === 0) {
-        list.innerHTML = '<div class="history-empty">No scanned items yet</div>';
+        list.innerHTML = '<div class="empty-state">No scanned items yet</div>';
         return;
     }
     list.innerHTML = history.map((item, i) => `
         <div class="history-item">
-            <div>
+            <div class="info">
                 <div class="value">${escapeHtml(item.value)}</div>
-                <div class="meta">${item.type} · ${item.time}</div>
+                <div class="meta">${item.type} | ${item.time}</div>
             </div>
-            <button class="del-btn" onclick="deleteItem(${i})">×</button>
+            <button class="delete-btn" onclick="deleteItem(${i})">×</button>
         </div>
     `).join('');
 }
 
-function escapeHtml(text) {
-    const d = document.createElement('div');
-    d.textContent = text;
-    return d.innerHTML;
-}
-
-// ═══════════════════════════════════════
-//  EXPORT
-// ═══════════════════════════════════════
 document.getElementById('exportBtn').addEventListener('click', () => {
     const history = getHistory();
-    if (history.length === 0) { showToast('No items to export', 'error'); return; }
+    if (history.length === 0) { alert('No items to export'); return; }
     const content = history.map(h => `${h.value} | ${h.type} | ${h.time}`).join('\n');
     const blob = new Blob([content], { type: 'text/plain' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `barcode_${new Date().toISOString().slice(0,10)}.txt`;
     a.click();
-    showToast(`Exported ${history.length} items`, 'success');
 });
+document.getElementById('clearAllBtn').addEventListener('click', clearAll);
 
-document.getElementById('clearHistoryBtn').addEventListener('click', () => {
-    if (getHistory().length === 0) return;
-    if (confirm('Clear all history?')) clearAll();
-});
-
-// ═══════════════════════════════════════
-//  TOAST
-// ═══════════════════════════════════════
-let toastTimer = null;
-function showToast(msg, type = '') {
-    const toast = document.getElementById('toast');
-    toast.textContent = msg;
-    toast.className = 'toast ' + (type ? type : '');
-    if (toastTimer) clearTimeout(toastTimer);
-    toast.classList.add('show');
-    toastTimer = setTimeout(() => toast.classList.remove('show'), 2500);
-}
+// Init
+document.getElementById('versionBadge').textContent = `v${VERSION}`;
+document.getElementById('changelogLabel').textContent = `Changelog v${VERSION}`;
+renderHistory();
+startScanCamera();
     </script>
 </body>
 </html>
